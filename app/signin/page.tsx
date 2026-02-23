@@ -2,11 +2,18 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import AuthLayout from '@/app/components/auth/AuthLayout';
-import SocialLoginButtons from '@/app/components/auth/SocialLoginButtons';
-import { SignInFormData } from '@/app/types';
+import { useRouter } from 'next/navigation';
+import { login } from '@/lib/api/auth';
+import { SignInFormData } from '@/types';
+import AuthLayout from 'components/auth/AuthLayout';
+import SocialLoginButtons from '@/components/auth/SocialLoginButtons';
+
+
+import { useAuthStore } from '@/store/useAuthStore';
 
 export default function SignInPage() {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState<SignInFormData>({
     email: '',
     password: '',
@@ -22,7 +29,6 @@ export default function SignInPage() {
       [name]: type === 'checkbox' ? checked : value,
     }));
     
-    // Clear error when user starts typing
     if (errors[name as keyof SignInFormData]) {
       setErrors(prev => ({ ...prev, [name]: undefined }));
     }
@@ -45,13 +51,46 @@ export default function SignInPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (validateForm()) {
-      // Handle sign in logic here
-      console.log('Form submitted:', formData);
-      // You can add your API call here
+      setIsLoading(true);
+      try {
+        const response = await login({
+          email: formData.email,
+          password: formData.password,
+          rememberMe: formData.rememberMe,
+        });
+        
+        if (response.success === false) {
+          setErrors(prev => ({
+            ...prev,
+            email: response.message || 'Account not verified. Please check your email.',
+          }));
+          setTimeout(() => {
+            router.push(`/verify-account?email=${encodeURIComponent(formData.email)}`);
+          }, 3000);
+          return;
+        }
+
+        if (response.accessToken && response.user) {
+          // Save to Zustand store instead of localStorage
+          useAuthStore.getState().setAuth(response.accessToken, response.user);
+        }
+        
+        console.log('Login successful', response);
+        router.push('/');
+        
+      } catch (error: any) {
+        console.error('Login failed', error);
+        setErrors(prev => ({
+            ...prev,
+            email: error?.data?.message || error.message || 'Login failed. Please check your credentials.'
+        }));
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -132,9 +171,10 @@ export default function SignInPage() {
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            disabled={isLoading}
+            className={`w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
-            Sign In
+            {isLoading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 

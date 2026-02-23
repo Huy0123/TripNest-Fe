@@ -1,16 +1,8 @@
-import { Apple, Facebook } from 'lucide-react';
+import {Facebook } from 'lucide-react';
 
 export default function SocialLoginButtons() {
   return (
     <div className="space-y-3">
-      <button
-        type="button"
-        className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
-      >
-        <Apple className="w-5 h-5" fill="currentColor" />
-        <span>Apple</span>
-      </button>
-
       <button
         type="button"
         className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"

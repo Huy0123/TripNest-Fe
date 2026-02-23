@@ -34,8 +34,8 @@ const adminRoutes = ['/admin'];
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // Get auth token from cookies
-  const token = request.cookies.get('auth_token')?.value;
+  // Get auth token from cookies (the backend securely sets 'refreshToken')
+  const token = request.cookies.get('refreshToken')?.value;
   const isAuthenticated = !!token;
 
   // Check if route is public
