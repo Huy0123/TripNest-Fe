@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import Image from "next/image";
-import SearchHeader from "../tours/SearchHeader";
+import SearchHeader from "../tour/SearchTour";
 import { heroDestinations as destinations } from "@/data/navigation";
 
 export default function HeroSection() {
@@ -36,7 +36,7 @@ export default function HeroSection() {
         })}
       </div>
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="pointer-events-auto max-w-4xl w-full">
+        <div className="pointer-events-auto max-w-4xl w-full mx-auto px-4 md:px-6 lg:px-8">
           <SearchHeader />
         </div>
       </div>

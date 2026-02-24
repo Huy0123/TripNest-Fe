@@ -1,6 +1,11 @@
 'use client';
 
 import { ReactNode, useState, useEffect } from 'react';
+import { useGoogleOneTapLogin } from '@react-oauth/google';
+import { loginWithGoogle } from '@/lib/api/auth';
+import { useAuthStore } from '@/store/useAuthStore';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -26,11 +31,32 @@ const slides = [
 
 export default function AuthLayout({ children }: AuthLayoutProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const router = useRouter();
+  const { setAuth } = useAuthStore();
+
+  useGoogleOneTapLogin({
+    onSuccess: async (credentialResponse) => {
+      try {
+        if (credentialResponse.credential) {
+          const res = await loginWithGoogle(credentialResponse.credential);
+          if (res.accessToken && res.user) {
+            setAuth(res.accessToken, res.user);
+            router.push('/');
+          }
+        }
+      } catch (error) {
+        console.error("Google One Tap login failed:", error);
+      }
+    },
+    onError: () => {
+      console.error("Google One Tap login failed");
+    },
+  });
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 5000); // Change slide every 5 seconds
+    }, 5000);
     return () => clearInterval(timer);
   }, []);
 

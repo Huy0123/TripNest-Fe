@@ -7,6 +7,7 @@ import { register } from '@/lib/api/auth';
 import AuthLayout from '@/components/auth/AuthLayout';
 import SocialLoginButtons from '@/components/auth/SocialLoginButtons';
 import { SignUpFormData } from '@/types';
+import { toast } from 'react-toastify';
 
 interface SignUpFormErrors {
   firstName?: string;
@@ -98,10 +99,7 @@ export default function SignUpPage() {
         router.push(`/verify-account?email=${encodeURIComponent(formData.email)}`);
       } catch (error: any) {
         console.error('Register failed:', error);
-        setErrors(prev => ({
-          ...prev,
-          email: error?.data?.message || error.message || 'Registration failed. Please try again.',
-        }));
+        toast.error(error?.data?.message || error.message || 'Registration failed. Please try again.');
       } finally {
         setIsLoading(false);
       }

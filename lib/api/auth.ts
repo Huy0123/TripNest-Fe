@@ -26,12 +26,19 @@ export async function login(credentials: LoginCredentials): Promise<AuthResponse
 }
 
 /**
+ * Login user with Google ID token
+ */
+export async function loginWithGoogle(idToken: string): Promise<AuthResponse> {
+  return apiPost<AuthResponse>('/auth/google', { idToken }, {
+    cache: 'no-store',
+  });
+}
+
+/**
  * Register new user
  */
 export async function register(data: RegisterData): Promise<AuthResponse> {
-  return apiPost<AuthResponse>('/auth/register', data, {
-    cache: 'no-store',
-  });
+  return apiPost<AuthResponse>('/auth/register', data);
 }
 
 /**
@@ -47,7 +54,7 @@ export async function logout(): Promise<void> {
  * Refresh access token using refresh token
  */
 export async function refreshToken(refreshToken: string): Promise<RefreshTokenResponse> {
-  return apiPost<RefreshTokenResponse>('/auth/refresh', { refreshToken }, {
+  return apiPost<RefreshTokenResponse>('/auth/refresh-token', { refreshToken }, {
     cache: 'no-store',
   });
 }
@@ -89,10 +96,20 @@ export async function verifyEmail(data: VerifyEmailData): Promise<{ message: str
 }
 
 /**
- * Resend verification email
+ * Resend verification email (OTP)
  */
 export async function resendVerificationEmail(email: string): Promise<{ message: string }> {
   return apiPost<{ message: string }>('/auth/resend-verification', { email }, {
+    cache: 'no-store',
+  });
+}
+
+/**
+ * Verify account with OTP code sent to email
+ * Endpoint: POST /auth/verify-account
+ */
+export async function verifyAccount(email: string, otp: string): Promise<{ message: string }> {
+  return apiPost<{ message: string }>('/auth/verify-account', { email, otp }, {
     cache: 'no-store',
   });
 }

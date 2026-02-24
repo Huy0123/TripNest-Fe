@@ -5,29 +5,35 @@
 export interface LoginCredentials {
   email: string;
   password: string;
+  rememberMe?: boolean;
 }
 
 export interface RegisterData {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
-  passwordConfirmation: string;
+  confirmPassword: string;
 }
 
 export interface AuthResponse {
-  user: AuthUser;
-  token: string;
-  refreshToken?: string;
+  success: boolean;
+  message: string;
+  user?: AuthUser;
+  accessToken?: string;
 }
 
+/** Shape của JWT payload user trả về từ BE NestJS */
 export interface AuthUser {
-  id: string;
-  name: string;
+  sub: string;       // user id
   email: string;
-  avatar?: string;
+  firstName: string;
+  lastName: string;
   role: 'customer' | 'admin';
-  emailVerified: boolean;
-  createdAt: string;
+  providers?: string[];
+  // Alias helpers
+  id?: string;
+  name?: string;
 }
 
 export interface TokenPayload {

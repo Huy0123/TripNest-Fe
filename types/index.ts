@@ -66,7 +66,8 @@ export interface User {
 }
 
 export interface SignUpFormData {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
   confirmPassword: string;
