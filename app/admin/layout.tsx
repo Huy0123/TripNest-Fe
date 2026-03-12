@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   MapPin,
@@ -13,7 +13,11 @@ import {
   X,
   LogOut,
   ChevronRight,
+  Map,
+  Tag,
+  Loader2
 } from 'lucide-react';
+import { useAuth } from '@/components/auth/AuthProvider';
 
 interface AdminSidebarProps {
   children: React.ReactNode;
@@ -21,35 +25,92 @@ interface AdminSidebarProps {
 
 const menuItems = [
   {
-    name: 'Dashboard',
+    name: 'Thống kê',
     href: '/admin',
     icon: LayoutDashboard,
   },
   {
-    name: 'Tours',
+    name: 'Địa điểm',
+    href: '/admin/locations',
+    icon: Map,
+  },
+  {
+    name: 'Quản lý Tour',
     href: '/admin/tours',
     icon: MapPin,
   },
   {
-    name: 'Bookings',
+    name: 'Khuyến mãi',
+    href: '/admin/promotions',
+    icon: Tag,
+  },
+  {
+    name: 'Đặt chỗ',
     href: '/admin/bookings',
     icon: Calendar,
   },
   {
-    name: 'Users',
+    name: 'Người dùng',
     href: '/admin/users',
     icon: Users,
-  },
-  {
-    name: 'Settings',
-    href: '/admin/settings',
-    icon: Settings,
-  },
+  }
 ];
 
 export default function AdminLayout({ children }: AdminSidebarProps) {
+  const { user, isLoading, logout } = useAuth();
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
+  const handleLogout = async () => {
+    await logout();
+    router.push('/signin');
+  };
+  // Route protection
+  useEffect(() => {
+    if (!isLoading && (!user || user.role !== 'ADMIN')) {
+      router.push('/signin');
+    }
+  }, [user, isLoading, router, pathname]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-grey-50">
+        <Loader2 className="w-10 h-10 animate-spin text-primary-600" />
+      </div>
+    );
+  }
+
+  if (!user || user.role !== 'ADMIN') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-grey-50 p-4 text-center">
+        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+          <X className="w-8 h-8 text-red-600" />
+        </div>
+        <h1 className="header-04-bold text-grey-900 mb-2">Truy cập bị từ chối</h1>
+        <p className="body-01-regular text-grey-600 mb-6 max-w-md">
+          Bạn không có quyền quản trị để truy cập trang này. 
+          <br />
+          <span className="text-red-500 font-medium">Quyền hiện tại: {user?.role || 'Khách'}</span>
+        </p>
+        <div className="flex gap-4">
+          <button 
+            onClick={() => router.push('/')}
+            className="px-6 py-2 border border-grey-300 rounded-lg hover:bg-grey-50 transition-colors body-02-medium"
+          >
+            Về trang chủ
+          </button>
+          <button 
+            onClick={handleLogout}
+            className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors body-02-medium shadow-sm"
+          >
+            Đăng xuất & Đăng nhập lại
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  
 
   return (
     <div className="min-h-screen bg-grey-50">
@@ -70,7 +131,7 @@ export default function AdminLayout({ children }: AdminSidebarProps) {
         {/* Logo */}
         <div className="flex items-center justify-between h-16 px-6 border-b border-grey-200">
           <Link href="/admin" className="header-05-bold text-primary-600">
-            Trip Nest Admin
+            Quản trị Trip Nest
           </Link>
           <button
             onClick={() => setSidebarOpen(false)}
@@ -110,38 +171,30 @@ export default function AdminLayout({ children }: AdminSidebarProps) {
         {/* User section at bottom */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-grey-200 bg-white">
           <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-grey-50">
-            <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center">
-              <span className="body-02-bold text-primary-700">A</span>
+            <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden border border-primary-200">
+              {user.avatar ? (
+                <img src={user.avatar} alt={user.firstName} className="w-full h-full object-cover" />
+              ) : (
+                <span className="body-02-bold text-primary-700">{user.firstName?.charAt(0) || 'A'}</span>
+              )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="body-02-bold text-grey-900 truncate">Admin User</p>
-              <p className="caption-regular text-grey-600 truncate">admin@tripnest.com</p>
+              <p className="body-02-bold text-grey-900 truncate">{user.firstName} {user.lastName}</p>
+              <p className="caption-regular text-grey-600 truncate">{user.email}</p>
             </div>
           </div>
-          <button className="mt-2 w-full flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+          <button 
+            onClick={handleLogout}
+            className="mt-2 w-full flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+          >
             <LogOut className="icon-sm" />
-            <span className="body-02-medium">Logout</span>
+            <span className="body-02-medium">Đăng xuất</span>
           </button>
         </div>
       </aside>
 
       {/* Main content */}
       <div className="lg:pl-64">
-        {/* Top bar */}
-        <header className="sticky top-0 z-30 h-16 bg-white border-b border-grey-200 flex items-center px-4 lg:px-8">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="lg:hidden p-2 hover:bg-grey-100 rounded-lg transition-colors"
-          >
-            <Menu className="icon-lg" />
-          </button>
-          <div className="flex-1 lg:ml-0 ml-4">
-            <h1 className="header-05-bold text-grey-900">
-              {menuItems.find((item) => item.href === pathname)?.name || 'Admin'}
-            </h1>
-          </div>
-        </header>
-
         {/* Page content */}
         <main className="p-4 lg:p-8">{children}</main>
       </div>
