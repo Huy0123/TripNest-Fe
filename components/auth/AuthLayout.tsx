@@ -1,36 +1,46 @@
 'use client';
 
 import { ReactNode, useState, useEffect } from 'react';
+import { useGoogleOneTapLogin } from '@react-oauth/google';
+import { authService } from '@/services/authService';
+import { useRouter } from 'next/navigation';
+import { mutate } from 'swr';
+import { toast } from 'react-toastify';
+import { slides } from '@/data/auth';
 
 interface AuthLayoutProps {
   children: ReactNode;
 }
 
-const slides = [
-  {
-    image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=1920&auto=format&fit=crop",
-    title: "Explore the World,",
-    subtitle: "One Destination at a Time",
-  },
-  {
-    image: "https://images.unsplash.com/photo-1510798831971-661eb04b3739?q=80&w=1920&auto=format&fit=crop",
-    title: "Discover Hidden Gems,",
-    subtitle: "Embrace the Journey",
-  },
-  {
-    image: "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?q=80&w=1920&auto=format&fit=crop",
-    title: "Unforgettable Experiences,",
-    subtitle: "Create Memories Forever",
-  }
-];
-
 export default function AuthLayout({ children }: AuthLayoutProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const router = useRouter();
+
+  useGoogleOneTapLogin({
+    onSuccess: async (credentialResponse) => {
+      try {
+        if (credentialResponse.credential) {
+          const res: any = await authService.googleLogin(credentialResponse.credential);
+          if (res.success) {
+            toast.success("Đăng nhập bằng One Tap thành công!");
+            mutate("/user/me");
+            router.push('/');
+          }
+        }
+      } catch (error: any) {
+        console.error("Google One Tap login failed:", error);
+        toast.error(error?.message || "Đăng nhập One Tap thất bại");
+      }
+    },
+    onError: () => {
+      console.error("Google One Tap login failed");
+    },
+  });
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 5000); // Change slide every 5 seconds
+    }, 5000);
     return () => clearInterval(timer);
   }, []);
 

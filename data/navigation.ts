@@ -224,8 +224,8 @@ export const packagesData = [
 ];
 
 export const heroDestinations = [
-  { id: 1, name: "Italy", image: "/italy.png" },
-  { id: 2, name: "France", image: "/france.png" },
-  { id: 3, name: "Morocco", image: "/morocco.png" },
-  { id: 4, name: "Mexico", image: "/mexico.png" },
+  { id: 1, name: "Hạ Long Bay", image: "https://cdn.nhandan.vn/images/1ef398c4e2fb4bf07980a2ded785b3ef6da51f0c0ad991901283c66f347bc9e4685e90a6d43591956557c1247283a022cf57c2a816edb3be3cd0e904b555bd11/halongbay-3501.jpg" },
+  { id: 2, name: "Đà Nẵng", image: "https://ik.imagekit.io/tvlk/blog/2022/06/ban-do-du-lich-da-nang-10.jpg" },
+  { id: 3, name: "Huế", image: "https://hotelnikkohanoi.com.vn/wp-content/uploads/2023/04/ban-do-du-lich-hue-1.jpg" },
+  { id: 4, name: "Phú Quốc", image: "https://dongtayland.vn/wp-content/uploads/2019/03/du-hoc-singapore-jcus-minh-hoa-phu-quoc.jpg" },
 ];

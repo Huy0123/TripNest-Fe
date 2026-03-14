@@ -51,6 +51,19 @@ export default function UsersManagement() {
     }
   };
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'Active': return 'Đang hoạt động';
+      case 'Inactive': return 'Ngưng hoạt động';
+      case 'Suspended': return 'Bị khóa';
+      default: return status;
+    }
+  };
+
+  const getRoleLabel = (role: string) => {
+    return role === 'Admin' ? 'Quản trị viên' : 'Khách hàng';
+  };
+
   const getRoleColor = (role: string) => {
     return role === 'Admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700';
   };
@@ -60,37 +73,37 @@ export default function UsersManagement() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="header-04-bold text-grey-900">Users Management</h2>
+          <h2 className="header-04-bold text-grey-900">Quản lý Người dùng</h2>
           <p className="body-02-regular text-grey-600 mt-1">
-            Manage all registered users
+            Quản lý tất cả người dùng đã đăng ký
           </p>
         </div>
         <Button size="lg" className="gap-2">
           <UserPlus className="icon-sm" />
-          Add New User
+          Thêm người dùng mới
         </Button>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg p-4 border border-grey-200">
-          <p className="caption-medium text-grey-600 mb-1">Total Users</p>
+          <p className="caption-medium text-grey-600 mb-1">Tổng người dùng</p>
           <p className="header-05-bold text-grey-900">{users.length}</p>
         </div>
         <div className="bg-white rounded-lg p-4 border border-grey-200">
-          <p className="caption-medium text-grey-600 mb-1">Active Users</p>
+          <p className="caption-medium text-grey-600 mb-1">Đang hoạt động</p>
           <p className="header-05-bold text-green-600">
             {users.filter(u => u.status === 'Active').length}
           </p>
         </div>
         <div className="bg-white rounded-lg p-4 border border-grey-200">
-          <p className="caption-medium text-grey-600 mb-1">New This Month</p>
+          <p className="caption-medium text-grey-600 mb-1">Mới trong tháng</p>
           <p className="header-05-bold text-blue-600">
             {users.filter(u => new Date(u.joinDate).getMonth() === new Date().getMonth()).length}
           </p>
         </div>
         <div className="bg-white rounded-lg p-4 border border-grey-200">
-          <p className="caption-medium text-grey-600 mb-1">Total Revenue</p>
+          <p className="caption-medium text-grey-600 mb-1">Tổng chi tiêu</p>
           <p className="header-05-bold text-grey-900">
             €{users.reduce((sum, u) => sum + u.totalSpent, 0).toLocaleString()}
           </p>
@@ -104,7 +117,7 @@ export default function UsersManagement() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 icon-md text-grey-400" />
             <input
               type="text"
-              placeholder="Search by name or email..."
+              placeholder="Tìm kiếm theo tên hoặc email..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full h-12 pl-10 pr-4 border border-grey-300 rounded-lg body-01-regular focus-ring"
@@ -117,10 +130,10 @@ export default function UsersManagement() {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="flex-1 h-12 px-4 border border-grey-300 rounded-lg body-01-regular focus-ring"
             >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-              <option value="suspended">Suspended</option>
+              <option value="all">Tất cả trạng thái</option>
+              <option value="active">Đang hoạt động</option>
+              <option value="inactive">Ngưng hoạt động</option>
+              <option value="suspended">Bị khóa</option>
             </select>
           </div>
         </div>
@@ -132,14 +145,14 @@ export default function UsersManagement() {
           <table className="w-full">
             <thead className="bg-grey-50 border-b border-grey-200">
               <tr>
-                <th className="text-left py-4 px-6 body-02-bold text-grey-900">User</th>
-                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Contact</th>
-                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Join Date</th>
-                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Bookings</th>
-                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Total Spent</th>
-                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Role</th>
-                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Status</th>
-                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Actions</th>
+                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Người dùng</th>
+                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Liên hệ</th>
+                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Ngày tham gia</th>
+                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Lượt đặt</th>
+                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Chi tiêu</th>
+                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Vai trò</th>
+                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Trạng thái</th>
+                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -178,12 +191,12 @@ export default function UsersManagement() {
                   </td>
                   <td className="py-4 px-6">
                     <span className={`inline-flex px-3 py-1 rounded-full caption-bold ${getRoleColor(user.role)}`}>
-                      {user.role}
+                      {getRoleLabel(user.role)}
                     </span>
                   </td>
                   <td className="py-4 px-6">
                     <span className={`inline-flex px-3 py-1 rounded-full caption-bold ${getStatusColor(user.status)}`}>
-                      {user.status}
+                      {getStatusLabel(user.status)}
                     </span>
                   </td>
                   <td className="py-4 px-6">
@@ -199,11 +212,11 @@ export default function UsersManagement() {
 
         <div className="flex items-center justify-between px-6 py-4 border-t border-grey-200 bg-grey-50">
           <p className="body-02-regular text-grey-600">
-            Showing {filteredUsers.length} of {users.length} users
+            Hiển thị {filteredUsers.length} trên tổng số {users.length} người dùng
           </p>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm">Previous</Button>
-            <Button variant="outline" size="sm">Next</Button>
+            <Button variant="outline" size="sm">Trước</Button>
+            <Button variant="outline" size="sm">Sau</Button>
           </div>
         </div>
       </div>

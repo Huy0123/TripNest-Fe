@@ -20,7 +20,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   }
 
   return (
-    <article className="min-h-screen bg-white pt-[var(--header-height)]">
+    <article className="min-h-screen bg-white">
       {/* Hero Image */}
       <div className="relative h-[400px] w-full">
          <div className="absolute inset-0 bg-gray-200" />

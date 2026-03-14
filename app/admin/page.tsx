@@ -36,79 +36,69 @@ function StatCard({ title, value, change, isPositive, icon: Icon }: StatCardProp
         >
           {change}
         </span>
-        <span className="body-02-regular text-grey-600">vs last month</span>
+        <span className="body-02-regular text-grey-600">so với tháng trước</span>
       </div>
     </div>
   );
 }
 
-interface RecentActivity {
-  id: number;
-  type: 'booking' | 'tour' | 'user';
-  title: string;
-  subtitle: string;
-  time: string;
-}
-
-const recentActivities: RecentActivity[] = [
-  {
-    id: 1,
-    type: 'booking',
-    title: 'New booking for Paris Tour',
-    subtitle: 'John Doe - €2,499',
-    time: '5 minutes ago',
-  },
-  {
-    id: 2,
-    type: 'tour',
-    title: 'Tour "Tokyo Experience" updated',
-    subtitle: 'Price changed to €1,899',
-    time: '1 hour ago',
-  },
-  {
-    id: 3,
-    type: 'user',
-    title: 'New user registered',
-    subtitle: 'Jane Smith',
-    time: '2 hours ago',
-  },
-  {
-    id: 4,
-    type: 'booking',
-    title: 'Booking cancelled',
-    subtitle: 'Rome Tour - Refund processed',
-    time: '3 hours ago',
-  },
-];
 
 export default function AdminDashboard() {
+  const [revenueRange, setRevenueRange] = React.useState<'week' | 'month' | 'year'>('week');
+
+  // Xử lý mock data cho từng loại range
+  const rangesData = {
+    'week': {
+      values: [40, 65, 45, 80, 55, 90, 75],
+      labels: ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'],
+      avgRevenue: '€6,461',
+      peakDay: 'Thứ 7'
+    },
+    'month': {
+      // Chia 30 ngày thành 6 khoảng, mỗi khoảng 5 ngày
+      values: [50, 45, 60, 55, 75, 95],
+      labels: ['1-5', '6-10', '11-15', '16-20', '21-25', '26-30'],
+      avgRevenue: '€5,890',
+      peakDay: 'Ngày 26-30'
+    },
+    'year': {
+      // 12 tháng
+      values: [40, 50, 45, 60, 70, 65, 85, 80, 75, 90, 95, 100],
+      labels: ['Th1', 'Th2', 'Th3', 'Th4', 'Th5', 'Th6', 'Th7', 'Th8', 'Th9', 'Th10', 'Th11', 'Th12'],
+      avgRevenue: '€61,105',
+      peakDay: 'Tháng 12'
+    }
+  };
+
+  const currentChartData = rangesData[revenueRange];
+
   return (
     <div className="space-y-8">
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
-          title="Total Revenue"
+          title="Tổng doanh thu"
           value="€45,231"
           change="+12.5%"
           isPositive={true}
           icon={DollarSign}
         />
         <StatCard
-          title="Total Bookings"
+          title="Tổng lượt đặt"
           value="234"
           change="+8.2%"
           isPositive={true}
           icon={Calendar}
         />
         <StatCard
-          title="Active Tours"
+          title="Số lượng Tour"
           value="56"
           change="+3"
           isPositive={true}
           icon={MapPin}
         />
         <StatCard
-          title="Total Users"
+          title="Tổng người dùng"
           value="1,429"
           change="-2.4%"
           isPositive={false}
@@ -117,28 +107,32 @@ export default function AdminDashboard() {
       </div>
 
       {/* Charts & Tables Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         {/* Revenue Chart */}
-        <div className="lg:col-span-2 bg-white rounded-xl p-6 border border-grey-200 shadow-card">
+        <div className="bg-white rounded-xl p-6 border border-grey-200 shadow-card">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="header-05-bold text-grey-900">Revenue Overview</h3>
-            <select className="px-3 py-2 border border-grey-300 rounded-lg body-02-regular text-grey-700 focus-ring">
-              <option>Last 7 days</option>
-              <option>Last 30 days</option>
-              <option>Last 90 days</option>
+            <h3 className="header-05-bold text-grey-900">Tổng quan doanh thu</h3>
+            <select 
+              className="px-3 py-2 border border-grey-300 rounded-lg body-02-regular text-grey-700 focus-ring"
+              value={revenueRange}
+              onChange={(e) => setRevenueRange(e.target.value as 'week' | 'month' | 'year')}
+            >
+              <option value="week">Tuần này</option>
+              <option value="month">Tháng này</option>
+              <option value="year">Năm này</option>
             </select>
           </div>
           
           {/* Simple bar chart */}
           <div className="h-64 flex items-end justify-between gap-2">
-            {[40, 65, 45, 80, 55, 90, 75].map((height, index) => (
+            {currentChartData.values.map((height, index) => (
               <div key={index} className="flex-1 flex flex-col items-center gap-2">
                 <div
                   className="w-full bg-primary-500 rounded-t-lg transition-all hover:bg-primary-600"
                   style={{ height: `${height}%` }}
                 />
-                <span className="caption-regular text-grey-600">
-                  {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][index]}
+                <span className="caption-regular text-grey-600 text-xs">
+                  {currentChartData.labels[index]}
                 </span>
               </div>
             ))}
@@ -146,83 +140,45 @@ export default function AdminDashboard() {
           
           <div className="mt-6 pt-6 border-t border-grey-200 flex items-center justify-between">
             <div>
-              <p className="caption-regular text-grey-600 mb-1">Average Daily Revenue</p>
-              <p className="header-06-bold text-grey-900">€6,461</p>
+              <p className="caption-regular text-grey-600 mb-1">Doanh thu trung bình</p>
+              <p className="header-06-bold text-grey-900">{currentChartData.avgRevenue}</p>
             </div>
             <div>
-              <p className="caption-regular text-grey-600 mb-1">Peak Day</p>
-              <p className="header-06-bold text-grey-900">Saturday</p>
+              <p className="caption-regular text-grey-600 mb-1">Thời gian cao điểm</p>
+              <p className="header-06-bold text-grey-900">{currentChartData.peakDay}</p>
             </div>
           </div>
         </div>
 
-        {/* Recent Activity */}
-        <div className="bg-white rounded-xl p-6 border border-grey-200 shadow-card">
-          <h3 className="header-05-bold text-grey-900 mb-4">Recent Activity</h3>
-          <div className="space-y-4">
-            {recentActivities.map((activity) => (
-              <div key={activity.id} className="flex gap-3">
-                <div
-                  className={`w-2 h-2 mt-2 rounded-full shrink-0 ${
-                    activity.type === 'booking'
-                      ? 'bg-blue-500'
-                      : activity.type === 'tour'
-                      ? 'bg-orange-500'
-                      : 'bg-green-500'
-                  }`}
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="body-02-medium text-grey-900 truncate">
-                    {activity.title}
-                  </p>
-                  <p className="caption-regular text-grey-600 truncate">
-                    {activity.subtitle}
-                  </p>
-                  <p className="caption-regular text-grey-500 mt-1">
-                    {activity.time}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <button className="mt-4 w-full py-2 text-center body-02-medium text-primary-600 hover:bg-primary-50 rounded-lg transition-colors">
-            View All Activity
-          </button>
-        </div>
+
       </div>
 
       {/* Top Tours Table */}
       <div className="bg-white rounded-xl p-6 border border-grey-200 shadow-card">
-        <h3 className="header-05-bold text-grey-900 mb-4">Top Performing Tours</h3>
+        <h3 className="header-05-bold text-grey-900 mb-4">Tour hiệu quả nhất</h3>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr className="border-b border-grey-200">
-                <th className="text-left py-3 px-4 body-02-medium text-grey-600">Tour Name</th>
-                <th className="text-left py-3 px-4 body-02-medium text-grey-600">Destination</th>
-                <th className="text-left py-3 px-4 body-02-medium text-grey-600">Bookings</th>
-                <th className="text-left py-3 px-4 body-02-medium text-grey-600">Revenue</th>
-                <th className="text-left py-3 px-4 body-02-medium text-grey-600">Status</th>
+                <th className="text-left py-3 px-4 body-02-medium text-grey-600">Tên Tour</th>
+                <th className="text-left py-3 px-4 body-02-medium text-grey-600">Điểm đến</th>
+                <th className="text-left py-3 px-4 body-02-medium text-grey-600">Lượt đặt</th>
+                <th className="text-left py-3 px-4 body-02-medium text-grey-600">Doanh thu</th>
               </tr>
             </thead>
             <tbody>
               {[
-                { name: 'Paris Discovery', destination: 'France', bookings: 45, revenue: '€112,455', status: 'Active' },
-                { name: 'Tokyo Experience', destination: 'Japan', bookings: 38, revenue: '€95,200', status: 'Active' },
-                { name: 'Rome Adventure', destination: 'Italy', bookings: 32, revenue: '€79,680', status: 'Active' },
-                { name: 'Amsterdam Tour', destination: 'Netherlands', bookings: 28, revenue: '€58,800', status: 'Active' },
-                { name: 'Barcelona Highlights', destination: 'Spain', bookings: 25, revenue: '€52,500', status: 'Active' },
+                { name: 'Paris Discovery', destination: 'France', bookings: 45, revenue: '€112,455' },
+                { name: 'Tokyo Experience', destination: 'Japan', bookings: 38, revenue: '€95,200' },
+                { name: 'Rome Adventure', destination: 'Italy', bookings: 32, revenue: '€79,680' },
+                { name: 'Amsterdam Tour', destination: 'Netherlands', bookings: 28, revenue: '€58,800' },
+                { name: 'Barcelona Highlights', destination: 'Spain', bookings: 25, revenue: '€52,500' },
               ].map((tour, index) => (
                 <tr key={index} className="border-b border-grey-100 hover:bg-grey-50 transition-colors">
                   <td className="py-3 px-4 body-01-medium text-grey-900">{tour.name}</td>
                   <td className="py-3 px-4 body-02-regular text-grey-700">{tour.destination}</td>
                   <td className="py-3 px-4 body-02-regular text-grey-700">{tour.bookings}</td>
                   <td className="py-3 px-4 body-02-bold text-grey-900">{tour.revenue}</td>
-                  <td className="py-3 px-4">
-                    <span className="inline-flex px-2 py-1 rounded-full bg-green-100 text-green-700 caption-medium">
-                      {tour.status}
-                    </span>
-                  </td>
                 </tr>
               ))}
             </tbody>

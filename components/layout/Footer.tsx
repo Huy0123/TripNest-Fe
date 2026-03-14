@@ -80,7 +80,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/packages"
+                  href="/tour"
                   className="body-01-regular text-grey-100 hover:text-white transition-colors"
                 >
                   Packages

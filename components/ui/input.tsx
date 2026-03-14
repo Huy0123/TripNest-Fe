@@ -11,8 +11,9 @@ export interface InputProps
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type = "text", label, error, helperText, isValid, id, ...props }, ref) => {
-    // Generate unique ID if not provided
-    const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
+    // Generate a stable, SSR-safe unique ID using React.useId()
+    const generatedId = React.useId();
+    const inputId = id || `input-${generatedId}`;
 
     return (
       <div className="space-y-1.5">

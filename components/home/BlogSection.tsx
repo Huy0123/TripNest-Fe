@@ -2,103 +2,91 @@
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { ChevronRight, Binoculars } from "lucide-react";
 
-interface BlogPost {
-  id: number;
-  title: string;
-  category: string;
-  image: string;
-  slug: string;
-}
+const destinations = [
+  {
+    id: 1,
+    title: "Bali",
+    country: "Indonesia",
+    image: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?q=80&w=600&auto=format&fit=crop",
+    link: "/blog/bali",
+  },
+  {
+    id: 2,
+    title: "Bangkok",
+    country: "Thái Lan",
+    image: "https://images.unsplash.com/photo-1508009603885-50cf7cbf0d62?q=80&w=600&auto=format&fit=crop",
+    link: "/blog/bangkok",
+  },
+  {
+    id: 3,
+    title: "Seoul",
+    country: "Hàn Quốc",
+    image: "https://images.unsplash.com/photo-1546874177-9e664107314e?q=80&w=600&auto=format&fit=crop",
+    link: "/blog/seoul",
+  },
+  {
+    id: 4,
+    title: "Istanbul",
+    country: "Thổ Nhĩ Kỳ",
+    image: "https://images.unsplash.com/photo-1541432901042-2d8bd64b4a9b?q=80&w=600&auto=format&fit=crop",
+    link: "/blog/istanbul",
+  },
+  {
+    id: 5,
+    title: "Liverpool",
+    country: "Anh",
+    image: "https://images.unsplash.com/photo-1550991845-a48e7aa2dfdb?q=80&w=600&auto=format&fit=crop",
+    link: "/blog/liverpool",
+  },
+];
 
 export default function BlogSection() {
-  const featuredPosts: BlogPost[] = [
-    {
-      id: 1,
-      title: "How to Pack Like a Pro: Essential Tips for Every Traveler",
-      category: "Tips",
-      image: "/blog/packing-tips.jpg",
-      slug: "how-to-pack-like-a-pro",
-    },
-    {
-      id: 2,
-      title: "How to Spend 3 Days in New York City Like a Local",
-      category: "Destinations",
-      image: "/blog/new-york-3-days.jpg",
-      slug: "3-days-in-new-york",
-    },
-  ];
-
   return (
-    <section className="relative w-full overflow-hidden bg-gradient-to-br from-orange-200/60 via-pink-200/50 to-orange-100/60 px-4 py-20">
-      {/* Diagonal Stripe Pattern */}
-      <div
-        className="absolute inset-0 opacity-30"
-        style={{
-          backgroundImage: `repeating-linear-gradient(
-            45deg,
-            transparent,
-            transparent 35px,
-            rgba(255, 255, 255, 0.5) 35px,
-            rgba(255, 255, 255, 0.5) 70px
-          )`,
-        }}
-      />
+    <section className="pt-12 pb-4 bg-white">
+      <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-6 flex items-center justify-start gap-2.5">
+          <Binoculars className="h-7 w-7 text-teal-600" />
+          <h2 className="text-[24px] md:text-[28px] font-bold text-gray-800">Cẩm nang du lịch</h2>
+        </div>
 
-      <div className="relative mx-auto max-w-7xl">
-        <div className="grid grid-cols-1 items-center gap-8 lg:grid-cols-2 lg:gap-12">
-          {/* Left Content */}
-          <div className="space-y-6">
-            <h2 className="text-4xl font-bold leading-tight text-gray-900 md:text-5xl lg:text-6xl">
-              Plan Smarter,
-              <br />
-              Travel Better
-            </h2>
-            <p className="text-lg text-gray-700 md:text-xl">
-              From Packing Hacks to Dream Destinations
-              <br />– Explore Our Blog Today!
-            </p>
-            <Link
-              href="/blog"
-              className="inline-block rounded-lg bg-orange-500 px-8 py-4 text-base font-semibold text-white shadow-lg transition-all hover:bg-orange-600 hover:shadow-xl active:scale-95"
+        {/* Grid of Destinations */}
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5 mb-8">
+          {destinations.map((dest) => (
+            <Link 
+              key={dest.id} 
+              href={dest.link}
+              className="group relative h-[280px] lg:h-[320px] w-full overflow-hidden rounded-xl shadow-sm hover:shadow-md transition-shadow"
             >
-              Start Exploring Our Blog!
+              <Image
+                src={dest.image}
+                alt={dest.title}
+                fill
+                className="object-cover transition-transform duration-700 ease-in-out group-hover:scale-105"
+              />
+              {/* Gradient Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90 group-hover:opacity-100 transition-opacity" />
+              
+              {/* Text */}
+              <div className="absolute bottom-0 left-0 p-5 w-full z-10">
+                <h3 className="text-[17px] font-bold text-white mb-0.5">{dest.title}</h3>
+                <p className="text-[13px] text-gray-200 font-medium">{dest.country}</p>
+              </div>
             </Link>
-          </div>
+          ))}
+        </div>
 
-          {/* Right Content - Blog Cards */}
-          <div className="flex flex-col gap-6">
-            {featuredPosts.map((post) => (
-              <Link
-                key={post.id}
-                href={`/blog/${post.slug}`}
-                className="group relative overflow-hidden rounded-2xl bg-white shadow-lg transition-all hover:shadow-2xl"
-              >
-                <div className="flex flex-col sm:flex-row">
-                  {/* Image */}
-                  <div className="relative h-64 w-full overflow-hidden sm:h-48 sm:w-48">
-                    <div
-                      className="h-full w-full bg-cover bg-center transition-transform duration-300 group-hover:scale-110"
-                      style={{ backgroundImage: `url('${post.image}')` }}
-                    />
-                    {/* Category Badge */}
-                    <div className="absolute left-4 top-4">
-                      <span className="rounded-full bg-white px-4 py-1.5 text-sm font-medium text-gray-800 shadow-md">
-                        {post.category}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex flex-1 items-center p-6">
-                    <h3 className="text-lg font-bold leading-snug text-gray-900 transition-colors group-hover:text-orange-600 sm:text-xl">
-                      {post.title}
-                    </h3>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+        {/* View More Button */}
+        <div className="flex justify-center mt-6">
+          <Link
+            href="/blog"
+            className="inline-flex items-center gap-1.5 text-[15px] font-semibold text-[#1e88e5] hover:text-[#1565c0] transition-colors"
+          >
+            Xem thêm <ChevronRight className="h-4 w-4" strokeWidth={2.5} />
+          </Link>
         </div>
       </div>
     </section>

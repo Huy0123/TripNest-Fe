@@ -6,7 +6,7 @@ import BlogCard from "@/components/blog/BlogCard";
 
 export default function BlogExample() {
   return (
-    <div className="min-h-screen bg-white pt-[var(--header-height)]">
+    <div className="min-h-screen bg-white">
        {/* Header */}
        <div className="bg-gray-100 py-16 px-4">
         <div className="max-w-4xl mx-auto text-center">
