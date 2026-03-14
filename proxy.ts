@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const protectedRoutes = ['/profile', '/bookings', '/favorites', '/settings'];
+const protectedRoutes = ['/profile', '/bookings', '/favorites', '/settings', '/passenger', '/payment', '/booking'];
 const adminRoutes = ['/admin'];
 
 const decodeToken = (token: string) => {

@@ -3,7 +3,7 @@ import { useState } from "react";
 import SearchHeader from "../tour/SearchTour";
 import { heroDestinations as destinations } from "@/data/navigation";
 
-export default function HeroSection() {
+export default function HeroSection({ locations }: { locations?: any[] }) {
   const [hoveredId, setHoveredId] = useState<number | null>(null);
   return (
     <section className="min-h-[500px] md:h-[calc(100vh-var(--header-height))] w-full py-6 relative">
@@ -40,7 +40,7 @@ export default function HeroSection() {
       {/* Search Bar Overlay */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-4">
         <div className="pointer-events-auto w-full max-w-4xl transform -translate-y-4 md:translate-y-0">
-          <SearchHeader />
+          <SearchHeader initialLocations={locations} />
         </div>
       </div>
     </section>

@@ -2,15 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { login } from '@/lib/api/auth';
 import { SignInFormData } from '@/types';
 import AuthLayout from 'components/auth/AuthLayout';
 import SocialLoginButtons from '@/components/auth/SocialLoginButtons';
-
-
-import { useAuthStore } from '@/store/useAuthStore';
-
+import { authService } from '@/services/authService';
+import { toast } from 'react-toastify';
+import { useRouter } from 'next/navigation';
+import { mutate } from 'swr';
 export default function SignInPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -38,13 +36,13 @@ export default function SignInPage() {
     const newErrors: Partial<SignInFormData> = {};
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = 'Email không được để trống';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Invalid email format';
+      newErrors.email = 'Định dạng email không hợp lệ';
     }
 
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = 'Mật khẩu không được để trống';
     }
 
     setErrors(newErrors);
@@ -57,37 +55,35 @@ export default function SignInPage() {
     if (validateForm()) {
       setIsLoading(true);
       try {
-        const response = await login({
+        const response = await authService.login({
           email: formData.email,
           password: formData.password,
           rememberMe: formData.rememberMe,
         });
-        
-        if (response.success === false) {
-          setErrors(prev => ({
-            ...prev,
-            email: response.message || 'Account not verified. Please check your email.',
-          }));
-          setTimeout(() => {
-            router.push(`/verify-account?email=${encodeURIComponent(formData.email)}`);
-          }, 3000);
-          return;
-        }
 
-        if (response.accessToken && response.user) {
-          // Save to Zustand store instead of localStorage
-          useAuthStore.getState().setAuth(response.accessToken, response.user);
+        toast.success('Đăng nhập thành công!');
+        const rawData = (response as any);
+        const userData = rawData?.user || rawData?.data?.user || rawData?.data || rawData;
+
+        await mutate('/user/me', { success: true, data: userData }, false);
+        
+        if (userData.role === 'ADMIN') {
+          window.location.href = '/admin';
+        } else {
+          window.location.href = '/';
         }
-        
-        console.log('Login successful', response);
-        router.push('/');
-        
       } catch (error: any) {
         console.error('Login failed', error);
-        setErrors(prev => ({
-            ...prev,
-            email: error?.data?.message || error.message || 'Login failed. Please check your credentials.'
-        }));
+        if (error.statusCode === 403) {
+          toast.error(error.message || 'Tài khoản chưa được kích hoạt');
+          const email = formData.email;
+          setTimeout(() => {
+            router.push(`/verify-account?email=${encodeURIComponent(email)}`);
+          }, 2000);
+          return;
+        }
+        const message = error.message || 'Đăng nhập thất bại';
+        toast.error(message);
       } finally {
         setIsLoading(false);
       }
@@ -98,11 +94,11 @@ export default function SignInPage() {
     <AuthLayout>
       <div className="w-full max-w-md mx-auto">
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome back!</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Chào mừng trở lại!</h2>
           <p className="text-gray-600">
-            Don&apos;t have an account?{' '}
+            Bạn chưa có tài khoản?{' '}
             <Link href="/signup" className="text-blue-600 hover:text-blue-700 font-medium">
-              Sign Up
+              Đăng ký ngay
             </Link>
           </p>
         </div>
@@ -119,7 +115,7 @@ export default function SignInPage() {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="Your mail"
+              placeholder="Địa chỉ email của bạn"
               className={`w-full px-4 py-3 border ${
                 errors.email ? 'border-red-500' : 'border-gray-300'
               } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
@@ -132,7 +128,7 @@ export default function SignInPage() {
           {/* Password */}
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
-              Password
+              Mật khẩu
             </label>
             <input
               type="password"
@@ -140,7 +136,7 @@ export default function SignInPage() {
               name="password"
               value={formData.password}
               onChange={handleChange}
-              placeholder="Your password"
+              placeholder="Mật khẩu của bạn"
               className={`w-full px-4 py-3 border ${
                 errors.password ? 'border-red-500' : 'border-gray-300'
               } rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
@@ -160,11 +156,11 @@ export default function SignInPage() {
                 onChange={handleChange}
                 className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
               />
-              <span className="text-sm text-gray-700">Remember me</span>
+              <span className="text-sm text-gray-700">Ghi nhớ đăng nhập</span>
             </label>
             
             <Link href="/forgot-password" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-              Forgot Password?
+              Quên mật khẩu?
             </Link>
           </div>
 
@@ -174,7 +170,7 @@ export default function SignInPage() {
             disabled={isLoading}
             className={`w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${isLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
-            {isLoading ? 'Signing in...' : 'Sign In'}
+            {isLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}
           </button>
         </form>
 
@@ -184,7 +180,7 @@ export default function SignInPage() {
             <div className="w-full border-t border-gray-300"></div>
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-4 bg-white text-gray-500">or sign in with</span>
+            <span className="px-4 bg-white text-gray-500">hoặc đăng nhập bằng</span>
           </div>
         </div>
 

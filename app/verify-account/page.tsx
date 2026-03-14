@@ -3,8 +3,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { verifyAccount, resendVerificationEmail } from '@/lib/api/auth';
+import { authService } from '@/services/authService'; 
 import AuthLayout from '@/components/auth/AuthLayout';
+import { toast } from 'react-toastify';
 
 const OTP_LENGTH = 6;
 const RESEND_COUNTDOWN = 60;
@@ -74,18 +75,18 @@ export default function VerifyAccountPage() {
     const otpCode = otp.join('');
 
     if (otpCode.length < OTP_LENGTH) {
-      setError('Please enter the complete 6-digit code.');
+      setError('Vui lòng nhập đầy đủ mã xác thực 6 chữ số.');
       return;
     }
 
     setIsLoading(true);
     setError('');
     try {
-      await verifyAccount(email, otpCode);
-      setSuccess('Account verified successfully! Redirecting to sign in...');
+      await authService.verifyAccount({ email, otp: otpCode });
+      toast.success('Xác thực tài khoản thành công!')
       setTimeout(() => router.push('/signin'), 2000);
     } catch (err: any) {
-      setError(err?.data?.message || err.message || 'Invalid or expired OTP. Please try again.');
+      toast.error(err.message)
     } finally {
       setIsLoading(false);
     }
@@ -96,13 +97,13 @@ export default function VerifyAccountPage() {
     setIsResending(true);
     setError('');
     try {
-      await resendVerificationEmail(email);
+      await authService.resendOtp({ email });
       setCountdown(RESEND_COUNTDOWN);
       setCanResend(false);
       setOtp(Array(OTP_LENGTH).fill(''));
       inputRefs.current[0]?.focus();
     } catch (err: any) {
-      setError(err?.data?.message || err.message || 'Failed to resend code. Please try again.');
+      toast.error(err.message)
     } finally {
       setIsResending(false);
     }
@@ -119,10 +120,10 @@ export default function VerifyAccountPage() {
                 d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Verify your email</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Xác thực email</h2>
           <p className="text-gray-600 text-sm">
-            We sent a 6-digit code to{' '}
-            <span className="font-semibold text-gray-800">{email || 'your email'}</span>
+            Chúng tôi đã gửi mã xác thực 6 chữ số đến{' '}
+            <span className="font-semibold text-gray-800">{email || 'email của bạn'}</span>
           </p>
         </div>
 
@@ -130,7 +131,7 @@ export default function VerifyAccountPage() {
           {/* OTP inputs */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3 text-center">
-              Enter verification code
+              Nhập mã xác thực
             </label>
             <div className="flex gap-3 justify-center">
               {otp.map((digit, index) => (
@@ -177,12 +178,12 @@ export default function VerifyAccountPage() {
               focus:ring-blue-500 focus:ring-offset-2
               ${(isLoading || success) ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
-            {isLoading ? 'Verifying...' : 'Verify Account'}
+            {isLoading ? 'Đang xác thực...' : 'Xác thực tài khoản'}
           </button>
 
           {/* Resend */}
           <div className="text-center text-sm text-gray-600">
-            Didn&apos;t receive the code?{' '}
+            Bạn không nhận được mã?{' '}
             {canResend ? (
               <button
                 type="button"
@@ -190,11 +191,11 @@ export default function VerifyAccountPage() {
                 disabled={isResending}
                 className="text-blue-600 hover:text-blue-700 font-medium disabled:opacity-50"
               >
-                {isResending ? 'Sending...' : 'Resend code'}
+                {isResending ? 'Đang gửi...' : 'Gửi lại mã'}
               </button>
             ) : (
               <span className="text-gray-400">
-                Resend in <span className="font-semibold text-gray-600">{countdown}s</span>
+                Gửi lại sau <span className="font-semibold text-gray-600">{countdown}s</span>
               </span>
             )}
           </div>
@@ -202,7 +203,7 @@ export default function VerifyAccountPage() {
           {/* Back to Sign In */}
           <div className="text-center">
             <Link href="/signin" className="text-sm text-gray-500 hover:text-gray-700">
-              ← Back to Sign In
+              ← Quay lại Đăng nhập
             </Link>
           </div>
         </form>

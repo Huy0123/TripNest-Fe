@@ -1,67 +1,65 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, Filter, Download, Calendar } from 'lucide-react';
+import useSWR, { mutate } from 'swr';
+import { Search, Filter, Download, Calendar, Eye, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
-interface Booking {
-  id: number;
-  bookingId: string;
-  customerName: string;
-  email: string;
-  tourName: string;
-  date: string;
-  guests: number;
-  totalAmount: number;
-  status: 'Confirmed' | 'Pending' | 'Cancelled' | 'Completed';
-  paymentStatus: 'Paid' | 'Pending' | 'Refunded';
-}
-
-const bookings: Booking[] = [
-  { id: 1, bookingId: 'BK-001', customerName: 'John Doe', email: 'john@example.com', tourName: 'Paris Discovery', date: '2026-02-15', guests: 2, totalAmount: 4998, status: 'Confirmed', paymentStatus: 'Paid' },
-  { id: 2, bookingId: 'BK-002', customerName: 'Jane Smith', email: 'jane@example.com', tourName: 'Tokyo Experience', date: '2026-03-20', guests: 1, totalAmount: 3299, status: 'Confirmed', paymentStatus: 'Paid' },
-  { id: 3, bookingId: 'BK-003', customerName: 'Bob Johnson', email: 'bob@example.com', tourName: 'Rome Adventure', date: '2026-02-28', guests: 4, totalAmount: 7596, status: 'Pending', paymentStatus: 'Pending' },
-  { id: 4, bookingId: 'BK-004', customerName: 'Alice Brown', email: 'alice@example.com', tourName: 'Amsterdam Tour', date: '2026-01-10', guests: 2, totalAmount: 3198, status: 'Completed', paymentStatus: 'Paid' },
-  { id: 5, bookingId: 'BK-005', customerName: 'Charlie Wilson', email: 'charlie@example.com', tourName: 'Barcelona Highlights', date: '2026-04-05', guests: 3, totalAmount: 6297, status: 'Cancelled', paymentStatus: 'Refunded' },
-  { id: 6, bookingId: 'BK-006', customerName: 'Diana Martinez', email: 'diana@example.com', tourName: 'London Explorer', date: '2026-03-12', guests: 2, totalAmount: 4398, status: 'Confirmed', paymentStatus: 'Paid' },
-];
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { bookingService, Booking } from '@/services/bookingService';
+import { toast } from 'react-toastify';
+import { format } from 'date-fns';
 
 export default function BookingsManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [isViewOpen, setIsViewOpen] = useState(false);
 
-  const filteredBookings = bookings.filter((booking) => {
-    const matchesSearch = 
-      booking.bookingId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      booking.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      booking.tourName.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || booking.status.toLowerCase() === statusFilter;
-    return matchesSearch && matchesStatus;
+  // Data fetching
+  const { data: bookingsResponse, isLoading } = useSWR(['/bookings', statusFilter], () => {
+    console.log('Fetching bookings with status:', statusFilter);
+    return bookingService.findAll({ status: statusFilter === 'all' ? undefined : statusFilter });
   });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Confirmed':
-        return 'bg-green-100 text-green-700';
-      case 'Pending':
-        return 'bg-orange-100 text-orange-700';
-      case 'Cancelled':
-        return 'bg-red-100 text-red-700';
-      case 'Completed':
-        return 'bg-blue-100 text-blue-700';
-      default:
-        return 'bg-grey-100 text-grey-700';
+  const bookings = Array.isArray(bookingsResponse?.data) 
+    ? bookingsResponse.data 
+    : (Array.isArray(bookingsResponse) ? bookingsResponse : []);
+
+  const filteredBookings = bookings.filter((booking: Booking) => {
+    return (
+      booking.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      booking.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      booking.tour?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  });
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Xác nhận xóa đơn đặt chỗ này?')) {
+      console.log('Deleting booking:', id);
+      try {
+        await bookingService.remove(id);
+        toast.success('Xóa đơn đặt chỗ thành công');
+        mutate(['/bookings', statusFilter]);
+      } catch (error: any) {
+        toast.error(error.message || 'Xóa thất bại');
+      }
     }
   };
 
-  const getPaymentColor = (status: string) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Paid':
+      case 'CONFIRMED':
+      case 'PAID':
         return 'bg-green-100 text-green-700';
-      case 'Pending':
+      case 'PENDING':
         return 'bg-orange-100 text-orange-700';
-      case 'Refunded':
-        return 'bg-grey-200 text-grey-700';
+      case 'CANCELLED':
+        return 'bg-red-100 text-red-700';
       default:
         return 'bg-grey-100 text-grey-700';
     }
@@ -69,143 +67,109 @@ export default function BookingsManagement() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="header-04-bold text-grey-900">Bookings Management</h2>
-          <p className="body-02-regular text-grey-600 mt-1">
-            View and manage all customer bookings
-          </p>
+          <h2 className="header-04-bold text-grey-900">Quản lý Đặt chỗ</h2>
+          <p className="body-02-regular text-grey-600 mt-1">Xem và quản lý tất cả đơn đặt của khách hàng</p>
         </div>
         <Button size="lg" variant="outline" className="gap-2">
-          <Download className="icon-sm" />
-          Export CSV
+          <Download className="icon-sm" /> Xuất file CSV
         </Button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg p-4 border border-grey-200">
-          <p className="caption-medium text-grey-600 mb-1">Total Bookings</p>
-          <p className="header-05-bold text-grey-900">{bookings.length}</p>
-        </div>
-        <div className="bg-white rounded-lg p-4 border border-grey-200">
-          <p className="caption-medium text-grey-600 mb-1">Confirmed</p>
-          <p className="header-05-bold text-green-600">
-            {bookings.filter(b => b.status === 'Confirmed').length}
-          </p>
-        </div>
-        <div className="bg-white rounded-lg p-4 border border-grey-200">
-          <p className="caption-medium text-grey-600 mb-1">Pending</p>
-          <p className="header-05-bold text-orange-600">
-            {bookings.filter(b => b.status === 'Pending').length}
-          </p>
-        </div>
-        <div className="bg-white rounded-lg p-4 border border-grey-200">
-          <p className="caption-medium text-grey-600 mb-1">Total Revenue</p>
-          <p className="header-05-bold text-grey-900">
-            €{bookings.reduce((sum, b) => sum + b.totalAmount, 0).toLocaleString()}
-          </p>
-        </div>
-      </div>
-
-      {/* Filters */}
       <div className="bg-white rounded-xl p-4 border border-grey-200 shadow-card">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 icon-md text-grey-400" />
             <input
               type="text"
-              placeholder="Search by booking ID, customer, or tour..."
+              placeholder="Tìm kiếm theo mã, tên khách..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full h-12 pl-10 pr-4 border border-grey-300 rounded-lg body-01-regular focus-ring"
             />
           </div>
-          <div className="flex items-center gap-2 sm:w-48">
-            <Filter className="icon-md text-grey-600" />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="flex-1 h-12 px-4 border border-grey-300 rounded-lg body-01-regular focus-ring"
-            >
-              <option value="all">All Status</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="pending">Pending</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-            </select>
-          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="sm:w-48 h-12 px-4 border border-grey-300 rounded-lg body-01-regular focus-ring"
+          >
+            <option value="all">Tất cả trạng thái</option>
+            <option value="PENDING">Chờ xử lý</option>
+            <option value="CONFIRMED">Đã xác nhận</option>
+            <option value="PAID">Đã thanh toán</option>
+            <option value="CANCELLED">Đã hủy</option>
+          </select>
         </div>
       </div>
 
-      {/* Bookings Table */}
       <div className="bg-white rounded-xl border border-grey-200 shadow-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-grey-50 border-b border-grey-200">
               <tr>
-                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Booking ID</th>
-                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Customer</th>
+                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Mã</th>
+                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Khách hàng</th>
                 <th className="text-left py-4 px-6 body-02-bold text-grey-900">Tour</th>
-                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Date</th>
-                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Guests</th>
-                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Amount</th>
-                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Payment</th>
-                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Status</th>
+                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Người</th>
+                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Tổng tiền</th>
+                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Trạng thái</th>
+                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Thao tác</th>
               </tr>
             </thead>
             <tbody>
-              {filteredBookings.map((booking) => (
-                <tr key={booking.id} className="border-b border-grey-100 hover:bg-grey-50 transition-colors">
+              {isLoading ? (
+                <tr><td colSpan={7} className="py-10 text-center">Đang tải...</td></tr>
+              ) : filteredBookings.map((booking: any) => (
+                <tr key={booking.id} className="border-b border-grey-100 hover:bg-grey-50">
+                  <td className="py-4 px-6 text-primary-600 font-bold">{booking.id.slice(-6).toUpperCase()}</td>
                   <td className="py-4 px-6">
-                    <p className="body-01-bold text-primary-600">{booking.bookingId}</p>
+                    <p className="font-medium">{booking.customerName}</p>
+                    <p className="text-xs text-grey-500">{booking.customerEmail}</p>
                   </td>
+                  <td className="py-4 px-6">{booking.tour?.name || 'N/A'}</td>
+                  <td className="py-4 px-6">{booking.numberOfPeople}</td>
+                  <td className="py-4 px-6 font-bold">${booking.totalPrice}</td>
                   <td className="py-4 px-6">
-                    <p className="body-02-medium text-grey-900">{booking.customerName}</p>
-                    <p className="caption-regular text-grey-600">{booking.email}</p>
-                  </td>
-                  <td className="py-4 px-6">
-                    <p className="body-02-regular text-grey-700">{booking.tourName}</p>
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="icon-sm text-grey-400" />
-                      <p className="body-02-regular text-grey-700">{booking.date}</p>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6">
-                    <p className="body-02-regular text-grey-700">{booking.guests}</p>
-                  </td>
-                  <td className="py-4 px-6">
-                    <p className="body-02-bold text-grey-900">€{booking.totalAmount.toLocaleString()}</p>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className={`inline-flex px-3 py-1 rounded-full caption-bold ${getPaymentColor(booking.paymentStatus)}`}>
-                      {booking.paymentStatus}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className={`inline-flex px-3 py-1 rounded-full caption-bold ${getStatusColor(booking.status)}`}>
+                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${getStatusColor(booking.status)}`}>
                       {booking.status}
                     </span>
+                  </td>
+                  <td className="py-4 px-6">
+                    <div className="flex gap-2">
+                       <button onClick={() => { setSelectedBooking(booking); setIsViewOpen(true); }} className="p-2 hover:bg-grey-100 rounded">
+                        <Eye className="w-4 h-4 text-grey-600" />
+                       </button>
+                       <button onClick={() => handleDelete(booking.id)} className="p-2 hover:bg-red-50 rounded">
+                        <Trash2 className="w-4 h-4 text-red-600" />
+                       </button>
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-
-        <div className="flex items-center justify-between px-6 py-4 border-t border-grey-200 bg-grey-50">
-          <p className="body-02-regular text-grey-600">
-            Showing {filteredBookings.length} of {bookings.length} bookings
-          </p>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm">Previous</Button>
-            <Button variant="outline" size="sm">Next</Button>
-          </div>
-        </div>
       </div>
+
+      <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Chi tiết Đặt chỗ</DialogTitle></DialogHeader>
+          {selectedBooking && (
+            <div className="space-y-4 py-4 text-sm">
+              <div className="flex justify-between border-b pb-2"><span>Mã đơn:</span> <span className="font-bold">{selectedBooking.id}</span></div>
+              <div className="flex justify-between border-b pb-2"><span>Khách hàng:</span> <span>{selectedBooking.customerName}</span></div>
+              <div className="flex justify-between border-b pb-2"><span>Email:</span> <span>{selectedBooking.customerEmail}</span></div>
+              <div className="flex justify-between border-b pb-2"><span>Số điện thoại:</span> <span>{selectedBooking.customerPhone}</span></div>
+              <div className="flex justify-between border-b pb-2"><span>Tour:</span> <span>{selectedBooking.tour?.name}</span></div>
+              <div className="flex justify-between border-b pb-2"><span>Số người:</span> <span>{selectedBooking.numberOfPeople}</span></div>
+              <div className="flex justify-between border-b pb-2 text-lg"><span>Tổng cộng:</span> <span className="font-bold text-primary-600">${selectedBooking.totalPrice}</span></div>
+              <div className="flex justify-between border-b pb-2"><span>Trạng thái:</span> <span className="font-bold">{selectedBooking.status}</span></div>
+              <div className="flex justify-between"><span>Ngày đặt:</span> <span>{format(new Date(selectedBooking.createdAt), 'dd/MM/yyyy HH:mm')}</span></div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

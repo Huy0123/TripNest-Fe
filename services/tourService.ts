@@ -1,7 +1,7 @@
 import apiClient from "@/lib/api-client";
 import { serverFetch } from "@/lib/server-fetch";
 
-export interface Tour {
+interface Tour {
   id: string;
   name: string;
   price: number;
@@ -11,7 +11,7 @@ export interface Tour {
   stayOption: string;
   guideService: string [];
   destinationIds: string[];
-  detail: {
+  detail?: {
     moreInfo?: {
       title: string,
       subtitle?: string;
@@ -31,6 +31,7 @@ export interface ToursQuery {
   page?: number;
   limit?: number;
   search?: string;
+  destinationSearch?: string;
   location?: string;
   minPrice?: number;
   maxPrice?: number;
@@ -40,8 +41,8 @@ export interface ToursQuery {
 
 // Client-side & Mutation Service
 export const tourService = {
-  findAll: async (query?: ToursQuery) => {
-    return apiClient.get(`/tours`, { params: query });
+  findAll: async (destinationSearch?: string, page?: number, limit?: number) => {
+    return apiClient.get(`/tours`, { params: { destinationSearch, page, limit } });
   },
 
   findOne: async (id: string) => {

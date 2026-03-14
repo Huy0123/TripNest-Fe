@@ -10,12 +10,12 @@ export interface UpdateUserDto {
 
 export const userService = {
     getProfile: async () => {
-        const response = await apiClient.get(`/users/me`);
+        const response = await apiClient.get(`/user/me`);
         return response;
     },
 
     updateProfile: async (data: UpdateUserDto) => {
-        const response = await apiClient.patch(`/users/me`, data);
+        const response = await apiClient.patch(`/user/me`, data);
         return response;
     },
 

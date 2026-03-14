@@ -79,3 +79,49 @@ export interface SignInFormData {
   password: string;
   rememberMe?: boolean;
 }
+
+
+export interface SliderItem {
+  id: number;
+  title: string;
+  image: string;
+  rating: number;
+  dateRange: string;
+  price: number;
+  isGuestFavorite: boolean;
+  originalPrice?: number;
+  discount?: number;
+}
+
+// data/auth.ts
+export interface AuthSlide {
+  image: string;
+  title: string;
+  subtitle: string;
+}
+
+// data/navigation.ts
+export interface NavLink {
+  name: string;
+  href: string;
+}
+
+export interface DestinationGroup {
+  id: string;
+  name: string;
+  image: string;
+  items: NavLink[];
+}
+
+export interface PackageGroup {
+  id: string;
+  name: string;
+  image: string;
+  items: NavLink[];
+}
+
+export interface HeroDestination {
+  id: number;
+  name: string;
+  image: string;
+}

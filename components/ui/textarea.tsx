@@ -11,8 +11,9 @@ export interface TextareaProps
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, label, error, helperText, isValid, id, ...props }, ref) => {
-    // Generate unique ID if not provided
-    const textareaId = id || `textarea-${Math.random().toString(36).substr(2, 9)}`;
+    // Generate a stable, SSR-safe unique ID using React.useId()
+    const generatedId = React.useId();
+    const textareaId = id || `textarea-${generatedId}`;
 
     return (
       <div className="space-y-1.5">

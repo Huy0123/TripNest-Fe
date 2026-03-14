@@ -1,24 +1,26 @@
 import { Facebook } from 'lucide-react';
 import { GoogleLogin } from '@react-oauth/google';
-import { loginWithGoogle } from '@/lib/api/auth';
-import { useAuthStore } from '@/store/useAuthStore';
+import { authService } from '@/services/authService';
 import { useRouter } from 'next/navigation';
+import { mutate } from 'swr';
+import { toast } from 'react-toastify';
 
 export default function SocialLoginButtons() {
   const router = useRouter();
-  const { setAuth } = useAuthStore();
 
   const handleGoogleSuccess = async (credentialResponse: any) => {
     try {
       if (credentialResponse.credential) {
-        const res = await loginWithGoogle(credentialResponse.credential);
-        if (res.accessToken && res.user) {
-          setAuth(res.accessToken, res.user);
+        const res: any = await authService.googleLogin(credentialResponse.credential);
+        if (res.success) {
+          toast.success("Đăng nhập thành công!");
+          mutate("/user/me");
           router.push('/');
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Google Login failed:", error);
+      toast.error(error?.message || "Đăng nhập Google thất bại");
     }
   };
 
@@ -44,7 +46,7 @@ export default function SocialLoginButtons() {
         className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-[#1877F2] text-white rounded-lg hover:bg-[#166FE5] transition-colors font-medium"
       >
         <Facebook className="w-5 h-5" fill="currentColor" />
-        <span>Facebook</span>
+        <span>Tiếp tục với Facebook</span>
       </button>
     </div>
   );

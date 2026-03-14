@@ -19,7 +19,7 @@ export default function LocationsManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize] = useState(5); // Show 5 items per page for easier testing of pagination
+  const [pageSize, setPageSize] = useState(5); // Show 5 items per page for easier testing of pagination
 
   // Debounce search
   useEffect(() => {
@@ -34,13 +34,13 @@ export default function LocationsManagement() {
   const { data: locationsResponse, isLoading } = useSWR(
     ['/locations', debouncedSearch, currentPage, pageSize],
     () => locationService.findAll(debouncedSearch, currentPage, pageSize)
-  );
+  ) as any;
   
   const locations = Array.isArray(locationsResponse?.data?.data) 
     ? locationsResponse.data.data 
     : (Array.isArray(locationsResponse?.data) ? locationsResponse.data : []);
 
-  const totalLocations = locationsResponse?.data?.total || locations.length;
+  const totalLocations = locationsResponse?.total || locations.length;
   const totalPages = Math.ceil(totalLocations / pageSize);
 
   // State for modals
@@ -128,13 +128,13 @@ export default function LocationsManagement() {
       <div className="bg-white rounded-xl p-4 border border-grey-200 shadow-card">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 icon-md text-grey-400" />
-            <input
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 icon-md" />
+            <Input
               type="text"
               placeholder="Tìm kiếm thành phố hoặc quốc gia..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-12 pl-10 pr-4 border border-grey-300 rounded-lg body-01-regular focus-ring"
+              className="pl-10 bg-white"
             />
           </div>
         </div>
@@ -203,9 +203,26 @@ export default function LocationsManagement() {
 
         {/* Pagination Footer */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-grey-200 bg-grey-50">
-          <p className="body-02-regular text-grey-600">
-            Hiển thị {locations.length > 0 ? (currentPage - 1) * pageSize + 1 : 0} - {Math.min(currentPage * pageSize, totalLocations)} trong tổng số {totalLocations} địa điểm
-          </p>
+          <div className="flex items-center gap-4">
+            <p className="body-02-regular text-grey-600">
+              Hiển thị {locations.length > 0 ? (currentPage - 1) * pageSize + 1 : 0} - {Math.min(currentPage * pageSize, totalLocations)} trong tổng số {totalLocations} địa điểm
+            </p>
+            <div className="flex items-center gap-2 border-l pl-4 border-grey-200">
+              <span className="text-sm text-gray-500">Số hàng:</span>
+              <select 
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="bg-transparent text-sm font-medium focus:outline-none cursor-pointer"
+              >
+                {[5, 10, 20, 50].map(size => (
+                  <option key={size} value={size}>{size}</option>
+                ))}
+              </select>
+            </div>
+          </div>
           <div className="flex items-center gap-4">
             <span className="body-02-regular text-grey-600">
               Trang {currentPage} / {totalPages || 1}

@@ -56,7 +56,7 @@ const deals = [
 ];
 
 interface PopularDealsProps {
-  tours?: import("@/types/api/tour").Tour[];
+  tours?: import("@/types/tours").Tour[];
 }
 
 export default function PopularDeals({ tours = [] }: PopularDealsProps) {
@@ -66,7 +66,7 @@ export default function PopularDeals({ tours = [] }: PopularDealsProps) {
       <div className="mx-auto max-w-7xl px-4 md:px-6 lg:px-8 relative">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between cursor-pointer group">
-          <Link href="/packages" className="flex items-center group">
+          <Link href="/tour" className="flex items-center group">
             <h2 className="text-[24px] md:text-[28px] font-bold text-gray-800 flex items-center hover:text-gray-600 transition-colors">
               Gói Tour Phổ Biến
               <ChevronRight className="ml-1 h-6 w-6 text-gray-700 group-hover:text-gray-900 transition-colors" />
@@ -88,17 +88,17 @@ export default function PopularDeals({ tours = [] }: PopularDealsProps) {
               tours.map((tour) => (
               <CarouselItem key={tour.id} className="pl-3 md:pl-4 basis-[80%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
                 <Link href={`/tour/${tour.id}`} className="block h-full cursor-pointer focus:outline-none rounded-xl">
-                  <div className="group relative h-full flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white hover:shadow-lg transition-shadow duration-300">
+                  <div className="group relative h-full flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white transition-shadow duration-300">
                   <div className="relative h-[180px] md:h-[200px] w-full shrink-0 overflow-hidden">
                     <Image
-                      src={tour.image || tour.images?.[0]?.imageUrl || "https://images.unsplash.com/photo-1599640842225-85d111c60e6b?q=80&w=800&auto=format&fit=crop"}
+                      src={tour.image || tour.detail?.images?.[0]?.url || "https://images.unsplash.com/photo-1599640842225-85d111c60e6b?q=80&w=800&auto=format&fit=crop"}
                       alt={tour.name}
                       fill
                       className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                     <div className="absolute top-0 left-0 rounded-br-[14px] bg-[#fb6a6e] px-2.5 py-1 text-xs font-semibold text-white flex items-center gap-1.5 z-10 shadow-sm">
                       <MapPin className="h-3.5 w-3.5" />
-                      {tour.location?.city || "Điểm đến"}
+                      {"Điểm đến"}
                     </div>
                   </div>
                   <div className="p-4 flex flex-col flex-grow">
@@ -114,12 +114,12 @@ export default function PopularDeals({ tours = [] }: PopularDealsProps) {
                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                          </svg>
                       </div>
-                      <span className="font-semibold text-[#1e88e5] text-[13.5px]">{tour.rating}/10</span>
+                      <span className="font-semibold text-[#1e88e5] text-[13.5px]">{(tour.rating || 0)}/10</span>
                       <span className="text-gray-400 text-[10px]">•</span>
-                      <span className="text-gray-500 text-[13px]">{tour.reviewCount || 0} đánh giá</span>
+                      <span className="text-gray-500 text-[13px]">{0} đánh giá</span>
                     </div>
                     <div className="text-[17px] font-bold text-[#e65100]">
-                      {(tour.price * (1 - (tour.discount || 0) / 100)).toLocaleString()} VNĐ
+                      {((tour.price || 0) * (1 - (tour.discount || 0) / 100)).toLocaleString()} VNĐ
                     </div>
                   </div>
                 </div>
@@ -130,7 +130,7 @@ export default function PopularDeals({ tours = [] }: PopularDealsProps) {
               deals.map((deal) => (
               <CarouselItem key={deal.id} className="pl-3 md:pl-4 basis-[80%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
                 <Link href={`/tour/${deal.id}`} className="block h-full cursor-pointer focus:outline-none rounded-xl">
-                  <div className="group relative h-full flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white hover:shadow-lg transition-shadow duration-300">
+                  <div className="group relative h-full flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white transition-shadow duration-300">
                   <div className="relative h-[180px] md:h-[200px] w-full shrink-0 overflow-hidden">
                     <Image
                       src={deal.image}
