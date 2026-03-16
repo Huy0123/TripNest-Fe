@@ -29,7 +29,7 @@ Trip Nest hướng tới việc mang lại một giao diện người dùng (UI)
 
 - **Framework**: Next.js 16 (App Router), React 19
 - **Ngôn ngữ**: TypeScript
-- **State Management**: Redux Toolkit & React-Redux (kết hợp SWR cho data fetching)
+- **Data Fetching & State**: SWR (cho Client-side fetching) và React Server Components
 - **UI/Styling**: Tailwind CSS, Shadcn UI, Lucide React (Icons)
 - **API Communication**: Axios (với interceptors để xử lý Refresh Token)
 - **Authentication**: JWT (JSON Web Tokens) qua cookie.
