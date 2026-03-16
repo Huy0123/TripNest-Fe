@@ -1,64 +1,72 @@
-# Trip Nest
+# Trip Nest - Nền Tảng Đặt Tour Du Lịch Toàn Diện
 
-Trip Nest is a modern travel booking experience built with Next.js App Router. It includes public pages for tours, bookings, blog, and contact, plus account and admin areas for managing users, tours, and bookings.
+Trip Nest là một nền tảng quản lý và đặt tour du lịch hiện đại, được xây dựng dựa trên Next.js (App Router). Hệ thống cung cấp trải nghiệm trơn tru từ việc tìm kiếm, khám phá các điểm đến, đặt vé cho đến quản lý thông tin tài khoản người dùng và hệ thống quản trị (Admin Dashboard) mạnh mẽ.
 
-## Features
+## Mô tả tổng quan (Project Overview)
 
-- Tours discovery with filtering and curated collections
-- Bookings and favorites pages
-- Auth flows (sign in, sign up, forgot password)
-- Blog listing and article pages
-- Profile and settings area
-- Admin dashboard for users, tours, and bookings
+Trip Nest hướng tới việc mang lại một giao diện người dùng (UI) tối giản, hiện đại (Flat Design) và tối ưu hóa trải nghiệm người dùng (UX). Gần đây, hệ thống đã được nâng cấp mạnh mẽ về mặt kiến trúc:
+- **Tối ưu hóa SEO & Hiệu suất**: Các trang trọng yếu như Trang chủ, Danh sách Tour (`/tour`), và Chi tiết Tour (`/tour/[id]`) đã được chuyển đổi sang lấy dữ liệu từ phía máy chủ (Server-Side Fetching). Điều này giúp trang tải nhanh hơn và công cụ tìm kiếm dễ dàng thu thập dữ liệu.
+- **Quản lý linh hoạt rải rác các phiên khởi hành (Tour Sessions)**: Hiển thị thời gian thực các phiên khởi hành sắp tới, số lượng chỗ còn trống và hỗ trợ giá khuyến mãi.
+- **Hệ thống xác thực bảo mật**: Quản lý đăng nhập/đăng ký thông qua JWT token (lưu trữ trong HTTP-only cookies) và đã tích hợp đăng nhập Google.
+- **Trải nghiệm tìm kiếm thông minh**: Tìm kiếm tour theo điểm đi, điểm đến, và ngày khởi hành với cơ chế SWR caching để đảm bảo dữ liệu luôn mới mà không làm chậm giao diện.
 
-## Tech Stack
+## Các Tính Năng Chính (Features)
 
-- Next.js 16 (App Router)
-- React 19
-- TypeScript
-- Tailwind CSS
+### Dành cho Khách Hàng (Customer Portal)
+- Khám phá các tour phổ biến, tour trong nước, quốc tế và các ưu đãi đặc biệt.
+- Lọc và tìm kiếm tour nâng cao (theo giá, loại hình, địa điểm, v.v.).
+- Xem chi tiết tour bao gồm lịch trình, thư viện ảnh (gallery), dịch vụ bao gồm/không bao gồm.
+- Đặt vé dựa trên các phiên khởi hành có sẵn (Tour Sessions).
+- Quản lý hồ sơ cá nhân, danh sách tour yêu thích và lịch sử đặt chỗ.
 
-## Getting Started
+### Dành cho Quản Trị Viên (Admin Dashboard)
+- Quản lý người dùng và phân quyền.
+- Quản lý danh sách tour du lịch, thư viện ảnh và thông tin chi tiết.
+- Quản lý lịch khởi hành (Tour Sessions), lịch trình, số lượng vé và giá cả theo từng thời điểm.
+- Quản lý các đơn đặt tour (Bookings).
 
-Install dependencies:
+## Công Nghệ Sử Dụng (Tech Stack)
 
-```bash
-npm install
-```
+- **Framework**: Next.js 16 (App Router), React 19
+- **Ngôn ngữ**: TypeScript
+- **State Management**: Redux Toolkit & React-Redux (kết hợp SWR cho data fetching)
+- **UI/Styling**: Tailwind CSS, Shadcn UI, Lucide React (Icons)
+- **API Communication**: Axios (với interceptors để xử lý Refresh Token)
+- **Authentication**: JWT (JSON Web Tokens) qua cookie.
 
-Create a local environment file:
+## Hướng Dẫn Cài Đặt (Getting Started)
 
-```bash
-# .env.local
-NEXT_PUBLIC_API_URL=https://your-api.example.com
-```
+1. **Cài đặt thư viện:**
+   ```bash
+   npm install
+   # hoặc
+   yarn install
+   ```
 
-Run the development server:
+2. **Cấu hình biến môi trường:**
+   Tạo file `.env` ở thư mục gốc của dự án với nội dung tham khảo sau:
+   ```env
+   NEXT_PUBLIC_API_URL=http://localhost:8080/api/v1
+   NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-google-client-id
+   ```
 
-```bash
-npm run dev
-```
+3. **Chạy server phát triển (Development):**
+   ```bash
+   npm run dev
+   ```
+   Sau đó mở trình duyệt và truy cập `http://localhost:3000`.
 
-Open http://localhost:3000 in your browser.
+## Cấu Trúc Thư Mục (Project Structure)
 
-## Scripts
+- `app/` — Nơi chứa các pages, layouts và routing của Next.js App Router.
+- `components/` — Nơi chứa các UI component có thể tái sử dụng, chia theo từng tính năng (`home/`, `tour/`, `admin/`, `auth/`...).
+- `services/` & `lib/` — Chứa các hàm giao tiếp API (Axios client, Server Fetch) và các logic tiện ích.
+- `types/` — Định nghĩa các interface/type của TypeScript giúp đảm bảo tính chặt chẽ của dữ liệu.
+- `data/` — Dữ liệu tĩnh (mock data, cấu hình navigation).
 
-- `npm run dev` — start the dev server
-- `npm run build` — build for production
-- `npm run start` — run the production server
-- `npm run lint` — run ESLint
+## Triển Khai (Deployment)
 
-## Project Structure
-
-- app/ — App Router pages and layouts
-- components/ — UI components grouped by feature
-- lib/api/ — API client helpers
-- data/ — mock data and navigation
-- types/ — TypeScript types
-
-## Deployment
-
-Build and start for production:
+Build dự án để tối ưu hóa production:
 
 ```bash
 npm run build
