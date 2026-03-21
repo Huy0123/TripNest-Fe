@@ -69,11 +69,12 @@ export function TourSessionCalendar({ sessions, onDateClick, onSessionClick }: T
     const endDate = endOfWeek(monthEnd, { weekStartsOn: 1 });
 
     const calendarDays = eachDayOfInterval({ start: startDate, end: endDate });
+    const sessionList = Array.isArray(sessions) ? sessions : [];
 
     return (
       <div className="grid grid-cols-7 gap-px bg-gray-100 border border-gray-100 rounded-xl overflow-hidden">
         {calendarDays.map((day, i) => {
-          const daySessions = sessions.filter(s => isSameDay(new Date(s.startDate), day));
+          const daySessions = sessionList.filter(s => isSameDay(new Date(s.startDate), day));
           const isCurrentMonth = isSameMonth(day, monthStart);
           
           return (

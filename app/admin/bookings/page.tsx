@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import useSWR, { mutate } from 'swr';
-import { Search, Filter, Download, Calendar, Eye, Trash2 } from 'lucide-react';
+import { Search, Download, Eye, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
   Dialog,
@@ -10,9 +10,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { bookingService, Booking } from '@/services/bookingService';
+import { bookingService } from '@/services/bookingService';
+import { Booking } from '@/types/booking';
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
+import { formatCurrency } from '@/lib/format';
 
 export default function BookingsManagement() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -31,22 +33,25 @@ export default function BookingsManagement() {
     : (Array.isArray(bookingsResponse) ? bookingsResponse : []);
 
   const filteredBookings = bookings.filter((booking: Booking) => {
+    if (!booking) return false;
+    const customerName = `${booking.user?.firstName || ''} ${booking.user?.lastName || ''}`.toLowerCase();
+    const tourName = (booking.session as any)?.tour?.name?.toLowerCase() || '';
+    const query = searchQuery.toLowerCase();
     return (
-      booking.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      booking.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      booking.tour?.name?.toLowerCase().includes(searchQuery.toLowerCase())
+      (booking.bookingCode || booking.id || '').toLowerCase().includes(query) ||
+      customerName.includes(query) ||
+      tourName.includes(query)
     );
   });
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Xác nhận xóa đơn đặt chỗ này?')) {
-      console.log('Deleting booking:', id);
+  const handleCancel = async (id: string) => {
+    if (confirm('Xác nhận hủy đơn đặt chỗ này?')) {
       try {
-        await bookingService.remove(id);
-        toast.success('Xóa đơn đặt chỗ thành công');
+        await bookingService.cancel(id);
+        toast.success('Hủy đơn đặt chỗ thành công');
         mutate(['/bookings', statusFilter]);
       } catch (error: any) {
-        toast.error(error.message || 'Xóa thất bại');
+        toast.error(error.message || 'Hủy thất bại');
       }
     }
   };
@@ -120,16 +125,16 @@ export default function BookingsManagement() {
             <tbody>
               {isLoading ? (
                 <tr><td colSpan={7} className="py-10 text-center">Đang tải...</td></tr>
-              ) : filteredBookings.map((booking: any) => (
+              ) : filteredBookings.map((booking: Booking) => (
                 <tr key={booking.id} className="border-b border-grey-100 hover:bg-grey-50">
-                  <td className="py-4 px-6 text-primary-600 font-bold">{booking.id.slice(-6).toUpperCase()}</td>
+                  <td className="py-4 px-6 text-primary-600 font-bold">{booking.bookingCode || (booking.id ? booking.id.slice(-6).toUpperCase() : 'N/A')}</td>
                   <td className="py-4 px-6">
-                    <p className="font-medium">{booking.customerName}</p>
-                    <p className="text-xs text-grey-500">{booking.customerEmail}</p>
+                    <p className="font-medium">{booking.user?.firstName} {booking.user?.lastName}</p>
+                    <p className="text-xs text-grey-500">{booking.user?.email}</p>
                   </td>
-                  <td className="py-4 px-6">{booking.tour?.name || 'N/A'}</td>
-                  <td className="py-4 px-6">{booking.numberOfPeople}</td>
-                  <td className="py-4 px-6 font-bold">${booking.totalPrice}</td>
+                  <td className="py-4 px-6">{(booking.session as any)?.tour?.name || 'N/A'}</td>
+                  <td className="py-4 px-6">{(booking.adults || 0) + (booking.children || 0)} người</td>
+                  <td className="py-4 px-6 font-bold">{formatCurrency(booking.totalAmount)}</td>
                   <td className="py-4 px-6">
                     <span className={`px-2 py-1 rounded-full text-xs font-bold ${getStatusColor(booking.status)}`}>
                       {booking.status}
@@ -140,8 +145,8 @@ export default function BookingsManagement() {
                        <button onClick={() => { setSelectedBooking(booking); setIsViewOpen(true); }} className="p-2 hover:bg-grey-100 rounded">
                         <Eye className="w-4 h-4 text-grey-600" />
                        </button>
-                       <button onClick={() => handleDelete(booking.id)} className="p-2 hover:bg-red-50 rounded">
-                        <Trash2 className="w-4 h-4 text-red-600" />
+                       <button onClick={() => handleCancel(booking.id)} className="p-2 hover:bg-red-50 rounded">
+                        <XCircle className="w-4 h-4 text-red-600" />
                        </button>
                     </div>
                   </td>
@@ -157,15 +162,15 @@ export default function BookingsManagement() {
           <DialogHeader><DialogTitle>Chi tiết Đặt chỗ</DialogTitle></DialogHeader>
           {selectedBooking && (
             <div className="space-y-4 py-4 text-sm">
-              <div className="flex justify-between border-b pb-2"><span>Mã đơn:</span> <span className="font-bold">{selectedBooking.id}</span></div>
-              <div className="flex justify-between border-b pb-2"><span>Khách hàng:</span> <span>{selectedBooking.customerName}</span></div>
-              <div className="flex justify-between border-b pb-2"><span>Email:</span> <span>{selectedBooking.customerEmail}</span></div>
-              <div className="flex justify-between border-b pb-2"><span>Số điện thoại:</span> <span>{selectedBooking.customerPhone}</span></div>
-              <div className="flex justify-between border-b pb-2"><span>Tour:</span> <span>{selectedBooking.tour?.name}</span></div>
-              <div className="flex justify-between border-b pb-2"><span>Số người:</span> <span>{selectedBooking.numberOfPeople}</span></div>
-              <div className="flex justify-between border-b pb-2 text-lg"><span>Tổng cộng:</span> <span className="font-bold text-primary-600">${selectedBooking.totalPrice}</span></div>
+              <div className="flex justify-between border-b pb-2"><span>Mã đơn:</span> <span className="font-bold">{selectedBooking.bookingCode || selectedBooking.id}</span></div>
+              <div className="flex justify-between border-b pb-2"><span>Khách hàng:</span> <span>{selectedBooking.user?.firstName} {selectedBooking.user?.lastName}</span></div>
+              <div className="flex justify-between border-b pb-2"><span>Email:</span> <span>{selectedBooking.user?.email}</span></div>
+              <div className="flex justify-between border-b pb-2"><span>Số điện thoại:</span> <span>{selectedBooking.user?.phone || 'N/A'}</span></div>
+              <div className="flex justify-between border-b pb-2"><span>Tour:</span> <span>{(selectedBooking.session as any)?.tour?.name || 'N/A'}</span></div>
+              <div className="flex justify-between border-b pb-2"><span>Người lớn / Trẻ em:</span> <span>{selectedBooking.adults} / {selectedBooking.children}</span></div>
+              <div className="flex justify-between border-b pb-2 text-lg"><span>Tổng cộng:</span> <span className="font-bold text-primary-600">{formatCurrency(selectedBooking.totalAmount)}</span></div>
               <div className="flex justify-between border-b pb-2"><span>Trạng thái:</span> <span className="font-bold">{selectedBooking.status}</span></div>
-              <div className="flex justify-between"><span>Ngày đặt:</span> <span>{format(new Date(selectedBooking.createdAt), 'dd/MM/yyyy HH:mm')}</span></div>
+              <div className="flex justify-between"><span>Ngày đặt:</span> <span>{selectedBooking.createdAt ? format(new Date(selectedBooking.createdAt), 'dd/MM/yyyy HH:mm') : 'N/A'}</span></div>
             </div>
           )}
         </DialogContent>

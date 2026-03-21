@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import useSWR, { mutate } from 'swr';
 import { Search, Plus, Edit, Trash2, Eye, Filter, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { formatCurrency } from '@/lib/format';
 import { Input } from '@/components/ui/input';
 import { NumericInput } from '@/components/ui/numeric-input';
 import {
@@ -292,7 +293,7 @@ export default function PromotionsManagement() {
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <span className="font-medium text-grey-500">Tối thiểu:</span>
-                <span className="col-span-3">{(selectedPromo.minOrderValue || 0).toLocaleString('vi-VN')} VNĐ</span>
+                <span className="col-span-3">{formatCurrency(selectedPromo.minOrderValue || 0)}</span>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <span className="font-medium">Đã dùng:</span>

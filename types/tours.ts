@@ -1,52 +1,44 @@
+import { Location } from './location';
+import { TourDetail } from './tour-detail';
 export enum StayOption {
-  HOTELS = 'HOTEL',
-  LODGES = 'LODGE',
-  RESORTS = 'RESORT',
-  INNS = 'INN'
-}
-
-export interface TourImage {
-  url: string;
-  publicId: string;
-}
-
-export interface ItineraryItem {
-  day: string;
-  title: string;
-  description?: string;
-}
-
-export interface MoreInfo {
-  title: string;
-  subtitle?: string;
-  items: string[];
-}
-
-export interface TourDetail {
-  moreInfo?: MoreInfo[];
-  experience?: string;
-  itinerary?: ItineraryItem[];
-  description?: string;
-  images?: TourImage[];
-  video?: {
-    url: string;
-    publicId: string;
-  };
+  HOTEL = 'HOTEL',
+  LODGE = 'LODGE',
+  RESORT = 'RESORT',
+  INN = 'INN',
+  HOMESTAY = 'HOMESTAY',
 }
 
 export interface Tour {
   id: string;
   name: string;
   duration: number;
-  guideService: string[];
-  image?: string;
   price: number;
-  discount?: number;
-  rating?: number;
-  departureLocationId: string;
+  discount: number;
+  guideService: string[];
   stayOption: StayOption;
-  destinationIds: string[];
-  detail: TourDetail;
+  image?: string;
+  imagePublicId?: string;
+  rating: number;
+  reviewCount: number;
+  departureLocation?: Location;
+  destinations: Location[];
+  detail?: TourDetail;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ToursQueryDto {
+  minPrice?: number;
+  maxPrice?: number;
+  destinationId?: string;
+  destinationSearch?: string;
+  departureLocationId?: string;
+  rating?: number;
+  duration?: number;
+  stayOption?: StayOption;
+  sortBy?: 'price' | 'rating' | 'createdAt';
+  sortOrder?: 'ASC' | 'DESC';
+  search?: string;
+  page?: number;
+  limit?: number;
 }

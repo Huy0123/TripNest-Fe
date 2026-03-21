@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { formatCurrency } from '@/lib/format';
 
 interface TourBookingCardProps {
   price: number;
@@ -18,11 +19,11 @@ export default function TourBookingCard({ price, discountPrice }: TourBookingCar
           <div className="text-sm text-gray-600 font-medium mb-1">Bắt đầu từ</div>
           <div className="flex items-baseline gap-2 flex-wrap">
             <span className="text-[24px] md:text-[28px] font-bold text-[#ff5e1f] leading-none">
-              {(displayPrice || 0).toLocaleString()} VND
+              {formatCurrency(displayPrice)}
             </span>
             {originalPrice !== null && (
               <span className="text-[14px] text-gray-400 line-through font-medium">
-                {(originalPrice || 0).toLocaleString()} VND
+                {formatCurrency(originalPrice)}
               </span>
             )}
           </div>

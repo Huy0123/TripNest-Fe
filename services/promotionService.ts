@@ -1,52 +1,39 @@
-import apiClient from "@/lib/api-client";
+import api from '@/lib/api-client';
 import { serverFetch } from "@/lib/server-fetch";
+import { Promotion, CreatePromotionDto, DiscountType } from '@/types/promotion';
 
-export enum DiscountType {
-  PERCENTAGE = 'PERCENTAGE',
-  FIXED_AMOUNT = 'FIXED_AMOUNT',
-}
+export { DiscountType };
 
-export interface Promotion {
-  id: string;
-  code: string;
-  discountType: DiscountType;
-  discountValue: number;
-  minOrderValue?: number;
-  maxDiscount?: number;
-  usageLimit?: number;
-  usedCount: number;
-  startDate: string;
-  endDate: string;
-  isActive: boolean;
-}
-
-// Client-side & Mutation Service
 export const promotionService = {
-  findAll: async () => {
-    return apiClient.get(`/promotions`);
+  findAll: async (): Promise<Promotion[]> => {
+    const response = await api.get('/promotions');
+    return response.data;
   },
 
-  findOne: async (id: string) => {
-    return apiClient.get(`/promotions/${id}`);
+  findOne: async (id: string): Promise<Promotion> => {
+    const response = await api.get(`/promotions/${id}`);
+    return response.data;
   },
 
-  checkCode: async (code: string) => {
-    return apiClient.get(`/promotions/check/${code}`);
+  checkCode: async (code: string): Promise<Promotion> => {
+    const response = await api.get(`/promotions/check/${code}`);
+    return response.data;
   },
 
-  create: async (data: Partial<Promotion>) => {
-    return apiClient.post(`/promotions`, data);
+  create: async (data: CreatePromotionDto): Promise<Promotion> => {
+    const response = await api.post('/promotions', data);
+    return response.data;
   },
 
-  update: async (id: string, data: Partial<Promotion>) => {
-    return apiClient.patch(`/promotions/${id}`, data);
+  update: async (id: string, data: Partial<CreatePromotionDto>): Promise<Promotion> => {
+    const response = await api.patch(`/promotions/${id}`, data);
+    return response.data;
   },
 
-  remove: async (id: string) => {
-    return apiClient.delete(`/promotions/${id}`);
+  remove: async (id: string): Promise<void> => {
+    await api.delete(`/promotions/${id}`);
   },
 };
 
-// Server-side Fetch Functions
 export const getPromotionsServer = () => serverFetch("/promotions");
-export const checkPromotionCodeServer = (code: string) => serverFetch(`/promotions/check/${code}`);
+export const getPromotionServer = (id: string) => serverFetch(`/promotions/${id}`);

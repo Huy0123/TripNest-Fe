@@ -100,7 +100,6 @@ export function TourSessionCreateModal({
         startDate: new Date(formData.startDate).toISOString(),
         capacity: Number(formData.capacity) || 0,
         adultPrice: Number(formData.adultPrice) || 0,
-        childrenPrice: Number(formData.childrenPrice) || 0,
         discount: Number(formData.discount) || 0,
         status: formData.status
       };

@@ -2,22 +2,22 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Search, MapPin, Calendar as CalendarIcon, X, Globe, ChevronDown } from "lucide-react";
+import { Search, MapPin, X, Globe, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
 import { destinations as navDestinations } from "@/data/navigation";
 
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import useSWR from "swr";
-import { locationService } from "@/services/locationService";
+import { useLocations } from "@/hooks/queries/useLocations";
 
 
+
+const regionEmoji: Record<string, string> = {
+  "việt-nam": "🇻🇳",
+  "thái-lan": "🇹🇭",
+  "nhật-bản": "🇯🇵",
+  "hàn-quốc": "🇰🇷",
+  "khác": "🌍"
+};
 
 // ─── Autocomplete component ───────────────────────────────────────────────────
 interface AutocompleteProps {
@@ -191,14 +191,9 @@ export default function SearchTour({ className, initialLocations }: { className?
   const [from, setFrom]         = useState("");
   const [destination, setDest]  = useState("");
   const [destId, setDestId]     = useState("");
-  const [date, setDate]         = useState<Date | undefined>(undefined);
-  const [openDate, setOpenDate] = useState(false);
 
   // Fetch locations from API with fallbackData for SEO
-  const { data: locationsResponse } = useSWR('locations', () => locationService.findAll() as any, {
-    fallbackData: initialLocations
-  });
-  const locations = Array.isArray(locationsResponse) ? locationsResponse : (locationsResponse as any)?.data || [];
+  const { locations } = useLocations(initialLocations);
 
   // Transform locations into grouped structure
   const PLACE_GROUPS = locations.reduce((acc: any[], loc: any) => {
@@ -228,8 +223,6 @@ export default function SearchTour({ className, initialLocations }: { className?
       params.set("search", destination);
     }
     
-    if (date) params.set("dateFrom", format(date, "yyyy-MM-dd"));
-
     router.push(`/tour?${params.toString()}`);
   };
 
@@ -268,52 +261,11 @@ export default function SearchTour({ className, initialLocations }: { className?
           groups={PLACE_GROUPS}
         />
 
-        {/* DATE */}
-        <Popover open={openDate} onOpenChange={setOpenDate}>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              className={cn(
-                "flex-1 flex items-center gap-3 px-5 py-4 text-left transition-colors",
-                "hover:bg-slate-50 focus:outline-none",
-                openDate && "bg-blue-50"
-              )}
-            >
-              <CalendarIcon className={cn("w-5 h-5 shrink-0", openDate ? "text-blue-500" : "text-slate-400")} />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-600 mb-1">Ngày đi</p>
-                <p className={cn("font-bold text-lg", date ? "text-slate-900" : "text-slate-400")}>
-                  {date ? format(date, "d MMM yyyy") : "Tất cả ngày"}
-                </p>
-              </div>
-              {date && (
-                <span
-                  onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); setDate(undefined); }}
-                  className="text-slate-300 hover:text-slate-500 shrink-0 cursor-pointer p-0.5 rounded"
-                >
-                  <X className="w-4 h-4" />
-                </span>
-              )}
-            </button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0 z-[100] bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden" align="start">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={(d) => {
-                setDate(d);
-                setOpenDate(false);
-              }}
-              disabled={{ before: new Date() }}
-            />
-          </PopoverContent>
-        </Popover>
-
         {/* SEARCH */}
         <div className="p-3 flex items-center justify-center shrink-0">
           <Button
             type="submit"
-            className="h-14 px-8 rounded-xl bg-primary-500 text-lg font-bold text-white gap-2 w-full md:w-auto hover:bg-primary-600 shadow-md hover:shadow-lg"
+            className="h-14 px-10 rounded-xl bg-primary-500 text-lg font-bold text-white gap-2 w-full md:w-auto hover:bg-primary-600 shadow-md hover:shadow-lg"
           >
             <Search className="w-5 h-5" />
             Tìm kiếm

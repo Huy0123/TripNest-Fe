@@ -1,12 +1,16 @@
 'use client';
 
 import React, { useState } from 'react';
-import useSWR from 'swr';
+import { useTourSessionsByTour } from '@/hooks/queries/useTourSessions';
 import { Calendar as CalendarIcon, ChevronRight } from 'lucide-react';
 import CalendarModal from './CalendarModal';
 import { useRouter, useParams } from 'next/navigation';
 import { tourSessionService } from '@/services/tourSessionService';
 import { format } from 'date-fns';
+import { formatCurrency } from '@/lib/format';
+import { useSocket } from '@/hooks/useSocket';
+import { TourSession } from '@/types/tour-session';
+
 
 interface TourTicketWidgetProps {
   tourId: string;
@@ -19,32 +23,58 @@ export default function TourTicketWidget({ tourId, price, discountPrice, initial
   const router = useRouter();
   const params = useParams();
   
-  // Fetch real sessions for this tour
-  const { data: sessionsResponse, isLoading } = useSWR(`/tour-sessions/tour/${tourId}`, () => {
-    console.log('Fetching sessions for tour:', tourId);
-    return tourSessionService.findByTour(tourId);
-  }, {
-    fallbackData: initialSessions ? { data: initialSessions } as any : undefined
-  });
+  // Fetch real sessions for this tour via custom hook
+  const { sessions, isLoading } = useTourSessionsByTour(tourId, initialSessions);
 
-  const sessions = Array.isArray(sessionsResponse?.data) 
-    ? sessionsResponse.data 
-    : (Array.isArray(sessionsResponse) ? sessionsResponse : []);
-
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
+  const [localSessions, setLocalSessions] = useState<TourSession[]>([]);
 
-  // Filter upcoming sessions
-  const upcomingSessions = sessions
-    .filter((s: any) => new Date(s.startDate || s.startTime) > new Date() && (s.status === 'UPCOMING' || s.status === 'OPEN'))
-    .sort((a: any, b: any) => new Date(a.startDate || a.startTime).getTime() - new Date(b.startDate || b.startTime).getTime());
+  // Initialize and sync localSessions with hook sessions
+  React.useEffect(() => {
+    if (sessions.length > 0) {
+      setLocalSessions(sessions);
+    }
+  }, [sessions]);
+
+  // WebSocket for real-time updates
+  const { on } = useSocket();
+
+  React.useEffect(() => {
+    const cleanup = on('sessionUpdated', (updatedData: { 
+      sessionId: string, 
+      bookedCount: number, 
+      capacity: number, 
+      status: string 
+    }) => {
+      setLocalSessions(prev => prev.map(s => 
+        s.id === updatedData.sessionId 
+          ? { ...s, bookedCount: updatedData.bookedCount, capacity: updatedData.capacity, status: updatedData.status as any }
+          : s
+      ));
+    });
+
+    return cleanup;
+  }, [on]);
+
+  // Filter upcoming sessions from local state
+  const upcomingSessions = localSessions
+    .filter((s: any) => {
+      const sessionDate = new Date(s.startDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Start of today
+      return sessionDate >= today && s.status === 'OPEN';
+    })
+    .sort((a: any, b: any) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
 
   // Default selection to first upcoming session if not set
-  if (!selectedSessionId && upcomingSessions.length > 0) {
-    setSelectedSessionId(upcomingSessions[0].id);
-  }
+  React.useEffect(() => {
+    if (!selectedSessionId && upcomingSessions.length > 0) {
+      setSelectedSessionId(upcomingSessions[0].id);
+    }
+  }, [selectedSessionId, upcomingSessions]);
 
-  const selectedSession = sessions.find((s: any) => s.id === selectedSessionId);
+  const selectedSession = localSessions.find((s: any) => s.id === selectedSessionId);
 
   const displayPrice = discountPrice || price;
   const originalPrice = discountPrice && discountPrice < price ? price : null;
@@ -68,7 +98,7 @@ export default function TourTicketWidget({ tourId, price, discountPrice, initial
 
         {upcomingSessions.slice(0, 7).map((s: any) => {
           const isSelected = selectedSessionId === s.id;
-          const startDate = new Date(s.startDate || s.startTime);
+          const startDate = new Date(s.startDate);
           return (
             <button
               key={s.id}
@@ -91,19 +121,19 @@ export default function TourTicketWidget({ tourId, price, discountPrice, initial
         <div className="border border-gray-200 rounded-xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h3 className="text-[16px] font-bold text-[#141414] mb-1">
-              Khởi hành: {format(new Date(selectedSession.startDate || selectedSession.startTime), 'HH:mm - dd/MM/yyyy')}
+              Khởi hành: {format(new Date(selectedSession.startDate), 'HH:mm - dd/MM/yyyy')}
             </h3>
-            <span className="text-[#0194f3] text-[13px] font-medium">Số lượng còn lại: {selectedSession.availableSlots || selectedSession.availableSeats}</span>
+            <span className="text-[#0194f3] text-[13px] font-medium">Số lượng còn lại: {selectedSession.capacity - selectedSession.bookedCount}</span>
           </div>
 
           <div className="flex flex-col items-end w-full md:w-auto">
             <div className="flex items-center gap-2 mb-3 w-full justify-between md:justify-end">
               <span className="text-[20px] md:text-[22px] font-bold text-[#ff5e1f] leading-none">
-                {displayPrice.toLocaleString()} VND
+                {formatCurrency(displayPrice)}
               </span>
               {originalPrice && (
                 <span className="text-[13px] text-gray-400 line-through font-medium leading-none">
-                  {originalPrice.toLocaleString()} VND
+                  {formatCurrency(originalPrice)}
                 </span>
               )}
             </div>
@@ -128,7 +158,7 @@ export default function TourTicketWidget({ tourId, price, discountPrice, initial
         onClose={() => setIsCalendarOpen(false)} 
         onSelectDate={(date) => {
           // Find session matching this date if any
-          const sessionOnDate = sessions.find((s: any) => format(new Date(s.startDate || s.startTime), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd'));
+          const sessionOnDate = localSessions.find((s: any) => format(new Date(s.startDate), 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd'));
           if (sessionOnDate) setSelectedSessionId(sessionOnDate.id);
           setIsCalendarOpen(false);
         }}

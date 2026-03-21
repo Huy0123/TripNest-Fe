@@ -4,7 +4,7 @@ import { createContext, useContext, ReactNode, useMemo, useEffect, useCallback }
 import useSWR, { mutate } from "swr";
 import { authService } from "@/services/authService";
 import { userService } from "@/services/userService";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 interface AuthContextType {
   user: any;
@@ -18,11 +18,11 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export default function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
 
   const { data, error, isLoading } = useSWR(
-    typeof window !== "undefined" && 
-    !["/signin", "/register", "/verify-account", "/forgot-password", "/reset-password"].includes(window.location.pathname) 
-      ? "/user/me" 
+    !["/signin", "/register", "/verify-account", "/forgot-password", "/reset-password"].includes(pathname) 
+      ? "/users/me" 
       : null, 
     userService.getProfile, 
     {
@@ -50,16 +50,19 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       await authService.logout();
     } catch (err) {
       console.error("Logout failed", err);
+      sessionStorage.removeItem("accessToken");
     } finally {
-      mutate("/user/me", null, false);
+      mutate("/users/me", null, false);
       if (typeof window !== "undefined") {
         window.location.href = "/signin";
       }
     }
-  }, [router]);
+    document.cookie = `accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+    mutate("/users/me");
+  }, []);
 
   const refreshUser = useCallback(() => {
-    mutate("/user/me");
+    mutate("/users/me");
   }, []);
 
   const value = useMemo(() => {

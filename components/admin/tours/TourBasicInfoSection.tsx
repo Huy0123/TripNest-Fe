@@ -39,7 +39,8 @@ export function TourBasicInfoSection({
       <div className="space-y-2">
         <label className="text-sm font-bold text-gray-700">Ảnh đại diện Tour</label>
         <div 
-          className="relative h-48 rounded-2xl overflow-hidden border-2 border-dashed border-gray-100 hover:border-gray-900 transition-all cursor-pointer group bg-gray-50/50"
+          className="relative w-full rounded-2xl overflow-hidden border-2 border-dashed border-gray-100 hover:border-gray-900 transition-all cursor-pointer group bg-gray-50/50"
+          style={{ aspectRatio: '16/5' }}
           onClick={() => document.getElementById('basicMainImageInput')?.click()}
         >
           {mainImagePreview ? (

@@ -51,9 +51,11 @@ export async function proxy(request: NextRequest) {
   const needsRefresh = (!accessToken || expired) && !!refreshToken;
 
   if (needsRefresh) {
+    console.log(`[Proxy] Token expired or missing for ${pathname}. Attempting refresh...`);
     try {
       const backendUrl = process.env.NEXT_PUBLIC_API_URL;
       
+      console.log(`[Proxy] Calling refresh: ${backendUrl}/auth/refresh`);
       const res = await fetch(`${backendUrl}/auth/refresh`, {
         method: 'POST',
         headers: { 
@@ -65,7 +67,7 @@ export async function proxy(request: NextRequest) {
       });
 
       if (res.ok) {
-        console.log(`[Proxy] Token refreshed for ${pathname}`);
+        console.log(`[Proxy] Token refreshed successfully for ${pathname}`);
         const setCookie = res.headers.get('set-cookie');
         const nextResponse = NextResponse.next();
         if (setCookie) {
@@ -74,14 +76,17 @@ export async function proxy(request: NextRequest) {
         return nextResponse;
       } else {
         const errorText = await res.text();
-        console.warn(`[Proxy] Refresh failed (${res.status}) at ${pathname}:`, errorText);
+        console.warn(`[Proxy] Refresh failed with status ${res.status} at ${pathname}:`, errorText);
         
         const isProtected = protectedRoutes.some((route) => pathname.startsWith(route));
         if (isProtected) {
+          console.warn(`[Proxy] Route ${pathname} is protected. Redirecting to /signin`);
           const redirectResponse = NextResponse.redirect(new URL('/signin', request.url));
           redirectResponse.cookies.delete('accessToken');
           redirectResponse.cookies.delete('refreshToken');
           return redirectResponse;
+        } else {
+          console.log(`[Proxy] Route ${pathname} is not protected. Continuing...`);
         }
       }
     } catch (error) {

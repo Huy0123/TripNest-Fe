@@ -3,20 +3,10 @@
 import React from "react";
 import Image from "next/image";
 
-interface City {
-  id: number;
-  name: string;
-  image: string;
-}
+import { Location } from "@/types/location";
 
-// City mapping for dynamic data
-interface DisplayCity {
-  id: string | number;
-  name: string;
-  image: string;
-}
-
-export default function PopularDestinations({ locations = [] }: { locations?: any[] }) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export default function PopularDestinations({ locations = [] }: { locations?: Location[] }) {
   // Mapping of common cities to high-quality travel images
   const cityImages: Record<string, string> = {
     'Hà Nội': 'https://images.unsplash.com/photo-1555921015-5532091f6026?q=80&w=600&auto=format&fit=crop',
@@ -31,20 +21,11 @@ export default function PopularDestinations({ locations = [] }: { locations?: an
     'Bangkok': 'https://images.unsplash.com/photo-1508009603885-50cf7c57936d?q=80&w=600&auto=format&fit=crop',
   };
 
-  const displayCities = locations.length > 0 
-    ? locations.map(loc => ({
-        id: loc.id,
-        name: loc.city,
-        image: cityImages[loc.city] || `https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=600&auto=format&fit=crop&sig=${loc.id}`
-      }))
-    : [
-        { id: 1, name: "Paris", image: cityImages['Paris'] },
-        { id: 2, name: "Hà Nội", image: cityImages['Hà Nội'] },
-        { id: 3, name: "Tokyo", image: cityImages['Tokyo'] },
-        { id: 4, name: "Đà Nẵng", image: cityImages['Đà Nẵng'] },
-        { id: 5, name: "Singapore", image: cityImages['Singapore'] },
-        { id: 6, name: "Phú Quốc", image: cityImages['Phú Quốc'] },
-      ];
+  const displayCities = locations.map(loc => ({
+    id: loc.id,
+    name: loc.city,
+    image: cityImages[loc.city] || `https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=600&auto=format&fit=crop&sig=${loc.id}`
+  }));
 
   return (
     <section className="relative overflow-hidden py-8 bg-white">
@@ -60,33 +41,39 @@ export default function PopularDestinations({ locations = [] }: { locations?: an
         </div>
 
         {/* Cities Grid */}
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-          {displayCities.map((city) => (
-            <div
-              key={city.id}
-              className="group relative h-48 cursor-pointer overflow-hidden rounded-2xl bg-gray-100"
-            >
-              {/* Background Image */}
-              <Image
-                src={city.image}
-                alt={city.name}
-                fill
-                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16.66vw"
-                className="object-cover transition-transform duration-500 group-hover:scale-110"
-              />
+        {displayCities.length > 0 ? (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            {displayCities.map((city) => (
+              <div
+                key={city.id}
+                className="group relative h-48 cursor-pointer overflow-hidden rounded-2xl bg-gray-100"
+              >
+                {/* Background Image */}
+                <Image
+                  src={city.image}
+                  alt={city.name}
+                  fill
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16.66vw"
+                  className="object-cover transition-transform duration-500 group-hover:scale-110"
+                />
 
-              {/* Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                {/* Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
 
-              {/* City Name */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <h3 className="header-03-bold text-white drop-shadow-lg">
-                  {city.name}
-                </h3>
+                {/* City Name */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <h3 className="text-xl font-bold text-white drop-shadow-lg">
+                    {city.name}
+                  </h3>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="w-full flex justify-center py-10 bg-gray-50 rounded-2xl border border-gray-100">
+            <p className="text-gray-500 font-medium">Chưa có dữ liệu điểm đến.</p>
+          </div>
+        )}
       </div>
     </section>
   );

@@ -24,12 +24,12 @@ function CallbackContent() {
         const res = await paymentService.verifyVNPayPayment(params);
         console.log('Verification result:', res);
         
-        if (res.data?.success || res.success) {
+        if (res.data?.success || (res.data as any)?.success) {
           setStatus('success');
           setMessage("Thanh toán thành công! Cảm ơn bạn đã lựa chọn TripNest.");
         } else {
           setStatus('error');
-          setMessage(res.data?.message || res.message || "Giao dịch không thành công hoặc bị hủy.");
+          setMessage(res.data?.message || (res.data as any)?.message || "Giao dịch không thành công hoặc bị hủy.");
         }
       } catch (error: any) {
         console.error('Verification error:', error);

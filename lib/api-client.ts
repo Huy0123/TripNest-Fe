@@ -33,11 +33,15 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {
+      console.log(`[Axios] 401 Error detected for ${originalRequest.url}. Starting refresh flow...`);
+      
       if (isRefreshing) {
+        console.log(`[Axios] Refresh already in progress, queuing request: ${originalRequest.url}`);
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
           .then(() => {
+            console.log(`[Axios] Retrying queued request: ${originalRequest.url}`);
             return apiClient(originalRequest);
           })
           .catch((err) => {
@@ -48,19 +52,29 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
+      const refreshUrl = `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`;
+      console.log(`[Axios] Calling refresh: ${refreshUrl}`);
+      
       try {
         await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
+          refreshUrl,
           {},
           { withCredentials: true }
         );
 
+        console.log(`[Axios] Refresh successful. Retrying original request: ${originalRequest.url}`);
         isRefreshing = false;
         processQueue(null);
 
         // Retry the original request
         return apiClient(originalRequest);
-      } catch (refreshError) {
+      } catch (refreshError: any) {
+        console.error(`[Axios] Refresh failed for ${originalRequest.url}:`, {
+          status: refreshError.response?.status,
+          data: refreshError.response?.data,
+          message: refreshError.message
+        });
+        
         isRefreshing = false;
         processQueue(refreshError);
         
@@ -72,11 +86,18 @@ apiClient.interceptors.response.use(
           const isProtected = protectedPaths.some(path => rawPath.startsWith(path));
           
           if (isProtected && rawPath !== "/signin") {
+            console.warn(`[Axios] Protected route ${rawPath} detected. Redirecting to /signin`);
             window.location.href = "/signin";
+          } else {
+            console.log(`[Axios] Path ${rawPath} is not protected or already on /signin. No redirect.`);
           }
         }
         return Promise.reject(refreshError);
       }
+    }
+
+    if (error.response?.status === 401) {
+       console.log(`[Axios] 401 Error (Retry already attempted or not applicable) for ${originalRequest?.url}`);
     }
 
     return Promise.reject(error.response?.data || error);

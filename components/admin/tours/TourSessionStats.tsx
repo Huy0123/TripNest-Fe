@@ -7,12 +7,22 @@ import { DepartureStatus } from '@/types/tour-session';
 
 interface TourSessionStatsProps {
   tourId: string;
+  totalBooked?: number;
+  totalCapacity?: number;
+  upcomingSessionsCount?: number;
+  firstUpcomingSession?: any;
 }
 
-export function TourSessionStats({ tourId }: TourSessionStatsProps) {
+export function TourSessionStats({ 
+  tourId, 
+  totalBooked, 
+  totalCapacity, 
+  upcomingSessionsCount, 
+  firstUpcomingSession 
+}: TourSessionStatsProps) {
   const { data: sessionsRes, isLoading } = useSWR(
-    tourId ? `/tour-sessions/tour/${tourId}` : null,
-    () => tourSessionService.findByTour(tourId)
+    totalBooked === undefined ? `/tour-sessions/tour/${tourId}` : null,
+    () => tourSessionService.findByTourId(tourId)
   );
 
   if (isLoading) {
@@ -30,34 +40,49 @@ export function TourSessionStats({ tourId }: TourSessionStatsProps) {
     );
   }
 
-  const allSessions = sessionsRes?.data || [];
+  let allSessions: any[] = [];
+  if (Array.isArray(sessionsRes)) {
+    allSessions = sessionsRes;
+  } else if (sessionsRes && Array.isArray((sessionsRes as any).data)) {
+    allSessions = (sessionsRes as any).data;
+  }
   
-  // Chỉ lấy các phiên đang hoạt động (Đang bán hoặc Hết chỗ)
-  const activeSessions = allSessions.filter((s: any) => 
-    s.status === DepartureStatus.OPEN || s.status === DepartureStatus.SOLDOUT
-  );
-  
-  const activeCount = activeSessions.length;
+  // Use props if provided, otherwise derive from SWR data
+  const finalActiveCount = upcomingSessionsCount !== undefined 
+    ? upcomingSessionsCount 
+    : allSessions.filter((s: any) => s.status === DepartureStatus.OPEN || s.status === DepartureStatus.SOLDOUT).length;
 
-  // Logic xác định trạng thái tổng quát dựa trên các phiên đang hoạt động
+  const sessionsForStatus = totalBooked !== undefined ? [] : allSessions; // Placeholder if props used
+
+  // Status mapping
   let statusText = "Chưa có lịch";
   let statusClass = "bg-gray-50 text-gray-400";
 
-  if (activeCount > 0) {
-    const hasOpen = activeSessions.some((s: any) => s.status === DepartureStatus.OPEN);
-    
-    if (hasOpen) {
+  if (totalBooked !== undefined) {
+    if (finalActiveCount > 0) {
       statusText = "Đang mở bán";
       statusClass = "bg-green-50 text-green-600";
     } else {
-      // Nếu có phiên active mà không cái nào OPEN thì chắc chắn là SOLDOUT
-      statusText = "Hết chỗ";
-      statusClass = "bg-red-50 text-red-600";
+      statusText = "Đã kết thúc";
+      statusClass = "bg-gray-100 text-gray-500";
     }
   } else if (allSessions.length > 0) {
-    // Nếu có phiên nhưng tất cả đã Đóng/Hủy
-    statusText = "Đã kết thúc";
-    statusClass = "bg-gray-100 text-gray-500";
+    const activeSessions = allSessions.filter((s: any) => 
+      s.status === DepartureStatus.OPEN || s.status === DepartureStatus.SOLDOUT
+    );
+    if (activeSessions.length > 0) {
+      const hasOpen = activeSessions.some((s: any) => s.status === DepartureStatus.OPEN);
+      if (hasOpen) {
+        statusText = "Đang mở bán";
+        statusClass = "bg-green-50 text-green-600";
+      } else {
+        statusText = "Hết chỗ";
+        statusClass = "bg-red-50 text-red-600";
+      }
+    } else {
+      statusText = "Đã kết thúc";
+      statusClass = "bg-gray-100 text-gray-500";
+    }
   }
 
   return (
@@ -65,7 +90,7 @@ export function TourSessionStats({ tourId }: TourSessionStatsProps) {
       <div className="text-center w-24">
         <p className="text-[10px] uppercase text-gray-400 font-bold mb-0.5">Lịch trình</p>
         <p className="text-xs font-bold text-gray-700">
-          {activeCount} Phiên
+          {finalActiveCount} Phiên
         </p>
       </div>
       <div className="text-center w-24">

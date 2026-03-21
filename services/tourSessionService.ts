@@ -1,17 +1,6 @@
 import apiClient from "@/lib/api-client";
 import { serverFetch } from "@/lib/server-fetch";
-import { DepartureStatus } from "@/types/tour-session";
-
-
-export interface TourSession {
-  tourId: string;
-  startDate: string;
-  capacity: number;
-  status?: DepartureStatus;
-  adultPrice: number;
-  childrenPrice?: number;
-  discount?: number;
-}
+import { TourSession, CreateTourSessionDto } from "@/types/tour-session";
 
 export interface TourSessionBulkCreateConfig {
   tourId: string;
@@ -26,37 +15,37 @@ export interface TourSessionBulkCreateConfig {
 
 // Client-side & Mutation Service
 export const tourSessionService = {
-  findAll: async (query?: { available?: boolean; upcoming?: number }) => {
+  findAll: async (query?: { mode?: 'AVAILABLE' | 'UPCOMING'; days?: number }): Promise<TourSession[]> => {
     return apiClient.get(`/tour-sessions`, { params: query });
   },
 
-  findOne: async (id: string) => {
+  findOne: async (id: string): Promise<TourSession> => {
     return apiClient.get(`/tour-sessions/${id}`);
   },
 
-  findByTour: async (tourId: string) => {
+  findByTourId: async (tourId: string): Promise<TourSession[]> => {
     return apiClient.get(`/tour-sessions/tour/${tourId}`);
   },
 
-  create: async (data: Partial<TourSession>) => {
+  create: async (data: CreateTourSessionDto): Promise<TourSession> => {
     return apiClient.post(`/tour-sessions`, data);
   },
 
-  bulkCreate: async (data: TourSessionBulkCreateConfig) => {
+  bulkCreate: async (data: TourSessionBulkCreateConfig): Promise<{ count: number; sessions: TourSession[] }> => {
     return apiClient.post(`/tour-sessions/bulk`, data);
   },
 
-  update: async (id: string, data: Partial<TourSession>) => {
+  update: async (id: string, data: any): Promise<TourSession> => {
     return apiClient.patch(`/tour-sessions/${id}`, data);
   },
 
-  remove: async (id: string) => {
+  remove: async (id: string): Promise<void> => {
     return apiClient.delete(`/tour-sessions/${id}`);
   },
 };
 
 // Server-side Fetch Functions
-export const getTourSessionsServer = (query?: { available?: boolean; upcoming?: number }) => 
+export const getTourSessionsServer = (query?: { mode?: 'AVAILABLE' | 'UPCOMING'; days?: number }) => 
     serverFetch("/tour-sessions", { query });
 
 export const getTourSessionServer = (id: string) => serverFetch(`/tour-sessions/${id}`);

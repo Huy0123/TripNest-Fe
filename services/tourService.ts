@@ -1,71 +1,34 @@
 import apiClient from "@/lib/api-client";
 import { serverFetch } from "@/lib/server-fetch";
-
-interface Tour {
-  id: string;
-  name: string;
-  price: number;
-  discount?: number;
-  duration: number;
-  departureLocationId: string;
-  stayOption: string;
-  guideService: string [];
-  destinationIds: string[];
-  detail?: {
-    moreInfo?: {
-      title: string,
-      subtitle?: string;
-      items: string[];
-    }[];
-    experience?: string;
-    itinerary?: {
-      day: string,
-      title: string,
-      description: string
-    }[];
-    description?: string;
-  }
-}
-
-export interface ToursQuery {
-  page?: number;
-  limit?: number;
-  search?: string;
-  destinationSearch?: string;
-  location?: string;
-  minPrice?: number;
-  maxPrice?: number;
-  sortBy?: string;
-  sortOrder?: 'ASC' | 'DESC';
-}
+import type { Tour, ToursQueryDto } from "@/types/tours";
 
 // Client-side & Mutation Service
 export const tourService = {
-  findAll: async (destinationSearch?: string, page?: number, limit?: number) => {
-    return apiClient.get(`/tours`, { params: { destinationSearch, page, limit } });
+  findAll: async (query?: ToursQueryDto): Promise<{ data: Tour[]; total: number }> => {
+    return apiClient.get(`/tours`, { params: query });
   },
 
-  findOne: async (id: string) => {
+  findOne: async (id: string): Promise<Tour> => {
     return apiClient.get(`/tours/${id}`);
   },
 
-  findByDiscount: async () => {
+  findByDiscount: async (): Promise<Tour[]> => {
     return apiClient.get(`/tours/discount`);
   },
 
-  create: async (data: Partial<Tour>) => {
+  create: async (data: any): Promise<Tour> => {
     return apiClient.post(`/tours`, data);
   },
 
-  update: async (id: string, data: Partial<Tour>) => {
+  update: async (id: string, data: any): Promise<Tour> => {
     return apiClient.patch(`/tours/${id}`, data);
   },
 
-  remove: async (id: string) => {
+  remove: async (id: string): Promise<void> => {
     return apiClient.delete(`/tours/${id}`);
   },
 
-  uploadImage: async (id: string, file: File) => {
+  uploadImage: async (id: string, file: File): Promise<Tour> => {
     const formData = new FormData();
     formData.append('file', file);
     return apiClient.patch(`/tours/${id}/image`, formData, {
@@ -75,6 +38,6 @@ export const tourService = {
 };
 
 // Server-side Fetch Functions
-export const getToursServer = (query?: ToursQuery) => serverFetch("/tours", { query });
-export const getTourDetailServer = (id: string) => serverFetch(`/tours/${id}`);
+export const getToursServer = (query?: ToursQueryDto) => serverFetch("/tours", { query });
+export const getTourByIdServer = (id: string) => serverFetch(`/tours/${id}`);
 export const getDiscountedToursServer = () => serverFetch("/tours/discount");

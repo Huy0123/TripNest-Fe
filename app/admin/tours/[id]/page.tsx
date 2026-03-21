@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import useSWR, { mutate } from "swr";
 import { 
   ArrowLeft, Save, Loader2, Image as ImageIcon, 
-  MapPin, Calendar, Info, ListChecks, Video, 
+  MapPin, Calendar, Info, ListChecks, 
   Trash2, Plus, Clock, Users, CheckCircle2, X, Upload
 } from "lucide-react";
 import { StayOption } from "@/types/tours";
@@ -13,14 +13,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { tourService } from "@/services/tourService";
 import { tourDetailService } from "@/services/tourDetailService";
-import { tourSessionService, TourSession } from "@/services/tourSessionService";
-import { DepartureStatus } from "@/types/tour-session";
-import { locationService } from "@/services/locationService";
+import { tourSessionService } from "@/services/tourSessionService";
+import { seedService } from "@/services/seedService";
+import { DepartureStatus, CreateTourSessionDto, TourSession } from "@/types/tour-session";
 import { toast } from "react-toastify";
 import { TourMediaSection } from "@/components/admin/tours/TourMediaSection";
 import { TourDetailSections } from "@/components/admin/tours/TourDetailSections";
 import { TourSessionsSection } from "@/components/admin/tours/TourSessionsSection";
 import { TourBasicInfoSection } from "@/components/admin/tours/TourBasicInfoSection";
+import { useTour } from "@/hooks/queries/useTours";
+import { useLocations } from "@/hooks/queries/useLocations";
+import { useTourSessionsByTour } from "@/hooks/queries/useTourSessions";
 
 type TabType = "basic" | "media" | "details" | "sessions";
 
@@ -33,12 +36,10 @@ export default function TourDetailPage() {
 
   // Media pending states
   const [pendingMainImage, setPendingMainImage] = useState<File | null>(null);
-  const [pendingVideo, setPendingVideo] = useState<File | null>(null);
   const [currentGallery, setCurrentGallery] = useState<{url: string, publicId?: string, file?: File}[]>([]);
   
   // Preview states
   const [mainImagePreview, setMainImagePreview] = useState<string | null>(null);
-  const [videoPreview, setVideoPreview] = useState<string | null>(null);
 
   const getErrorMessage = (error: any) => {
     if (typeof error === 'string') return error;
@@ -46,42 +47,48 @@ export default function TourDetailPage() {
   };
 
   // Fetch data
-  const { data: tourRes, isLoading: tourLoading } = useSWR(
-    tourId ? `/tours/${tourId}` : null,
-    () => tourService.findOne(tourId)
-  );
-  const { data: locationsRes } = useSWR("/locations", () => locationService.findAll());
-  const { data: sessionsRes, mutate: mutateSessions } = useSWR(
-    tourId ? `/tour-sessions/tour/${tourId}` : null,
-    () => tourSessionService.findByTour(tourId)
-  );
-
-  const tour = tourRes?.data || tourRes;
-  const locations = locationsRes?.data || [];
-  const sessions = sessionsRes?.data || [];
+  const { tour, isLoading: tourLoading, mutate: mutateTour } = useTour(tourId);
+  const { locations } = useLocations();
+  const { sessions, mutate: mutateSessions } = useTourSessionsByTour(tourId);
 
   const [formData, setFormData] = useState<any>(null);
 
   useEffect(() => {
     if (tour && !formData) {
+      // Handle legacy or malformed detail
+      let detailObj = tour.detail;
+      if (typeof detailObj === 'string') {
+        try {
+          detailObj = JSON.parse(detailObj);
+        } catch (e) {
+          detailObj = {};
+        }
+      }
+
       setFormData({
         ...tour,
-        departureLocationId: tour.departureLocation?.id || tour.departureLocationId || "",
-        destinationIds: tour.destinations?.length > 0 
+        departureLocationId: tour.departureLocation?.id || (tour as any).departureLocationId || "",
+        destinationIds: Array.isArray(tour.destinations) && tour.destinations.length > 0
           ? tour.destinations.map((d: any) => d.id || d)
-          : tour.destinationIds || [""],
-        guideService: tour.guideService || [""],
+          : (Array.isArray((tour as any).destinationIds) ? (tour as any).destinationIds : [""]),
+        guideService: Array.isArray(tour.guideService) ? tour.guideService : [""],
         detail: {
-          description: tour.detail?.description || "",
-          experience: tour.detail?.experience || "",
-          itinerary: tour.detail?.itinerary || [{ day: "1", title: "", description: "" }],
-          moreInfo: tour.detail?.moreInfo || [{ title: "", subtitle: "", items: [""] }]
+          description: detailObj?.description || "",
+          experience: detailObj?.experience || "",
+          itinerary: Array.isArray(detailObj?.itinerary) && detailObj.itinerary.length > 0 
+            ? detailObj.itinerary 
+            : [{ day: "1", title: "", description: "" }],
+          inclusions: Array.isArray(detailObj?.inclusions) && detailObj.inclusions.length > 0 
+            ? detailObj.inclusions 
+            : [""],
+          exclusions: Array.isArray(detailObj?.exclusions) && detailObj.exclusions.length > 0 
+            ? detailObj.exclusions 
+            : [""],
         }
       });
       
-      // Initialize previews from tour data
       setMainImagePreview(tour.image || null);
-      setVideoPreview(tour.detail?.video || null);
+      
       setCurrentGallery(tour.detail?.images?.map((img: any) => ({ 
         url: img.url, 
         publicId: img.publicId 
@@ -139,120 +146,105 @@ export default function TourDetailPage() {
     }));
   };
 
-  const handleMoreInfoChange = (index: number, field: string, value: string) => {
-    const newMoreInfo = [...formData.detail.moreInfo];
-    newMoreInfo[index] = { ...newMoreInfo[index], [field]: value };
+  const handleDetailArrayChange = (index: number, value: string, field: 'inclusions' | 'exclusions') => {
+    const newArr = [...(formData.detail[field] || [])];
+    newArr[index] = value;
     setFormData((prev: any) => ({
       ...prev,
-      detail: { ...prev.detail, moreInfo: newMoreInfo }
+      detail: { ...prev.detail, [field]: newArr }
     }));
   };
 
-  const addMoreInfoItem = () => {
+  const addDetailArrayItem = (field: 'inclusions' | 'exclusions') => {
     setFormData((prev: any) => ({
       ...prev,
-      detail: {
-        ...prev.detail,
-        moreInfo: [...prev.detail.moreInfo, { title: "", subtitle: "", items: [""] }]
-      }
+      detail: { ...prev.detail, [field]: [...(prev.detail[field] || []), ""] }
     }));
   };
 
-  const removeMoreInfoItem = (index: number) => {
-    const newMoreInfo = formData.detail.moreInfo.filter((_: any, i: number) => i !== index);
+  const removeDetailArrayItem = (index: number, field: 'inclusions' | 'exclusions') => {
     setFormData((prev: any) => ({
       ...prev,
-      detail: { ...prev.detail, moreInfo: newMoreInfo }
+      detail: { ...prev.detail, [field]: (prev.detail[field] || []).filter((_: any, i: number) => i !== index) }
     }));
   };
 
-  const handleMoreInfoSubItemChange = (infoIdx: number, itemIdx: number, value: string) => {
-    const newMoreInfo = [...formData.detail.moreInfo];
-    const newItems = [...newMoreInfo[infoIdx].items];
-    newItems[itemIdx] = value;
-    newMoreInfo[infoIdx] = { ...newMoreInfo[infoIdx], items: newItems };
-    setFormData((prev: any) => ({
-      ...prev,
-      detail: { ...prev.detail, moreInfo: newMoreInfo }
-    }));
-  };
-
-  const addMoreInfoSubItem = (infoIdx: number) => {
-    const newMoreInfo = [...formData.detail.moreInfo];
-    newMoreInfo[infoIdx] = { 
-      ...newMoreInfo[infoIdx], 
-      items: [...newMoreInfo[infoIdx].items, ""] 
-    };
-    setFormData((prev: any) => ({
-      ...prev,
-      detail: { ...prev.detail, moreInfo: newMoreInfo }
-    }));
-  };
-
-  const removeMoreInfoSubItem = (infoIdx: number, itemIdx: number) => {
-    const newMoreInfo = [...formData.detail.moreInfo];
-    const newItems = newMoreInfo[infoIdx].items.filter((_: any, i: number) => i !== itemIdx);
-    newMoreInfo[infoIdx] = { ...newMoreInfo[infoIdx], items: newItems };
-    setFormData((prev: any) => ({
-      ...prev,
-      detail: { ...prev.detail, moreInfo: newMoreInfo }
-    }));
+  const handleSeedData = async () => {
+    try {
+      setIsSaving(true);
+      await seedService.seedTourData(tourId);
+      toast.success("Đã tạo data mẫu thành công (Detail, Session, Review)");
+      mutateTour();
+      mutateSessions();
+    } catch (error: any) {
+      toast.error(`Lỗi tạo data mẫu: ${getErrorMessage(error)}`);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSave = async () => {
     try {
       setIsSaving(true);
-      const submissionData = {
-        ...formData,
-        price: Number(formData.price),
-        duration: Number(formData.duration),
-        discount: Number(formData.discount) || 0,
-        guideService: formData.guideService.filter((s: string) => s.trim() !== ""),
-        destinationIds: formData.destinationIds.filter((id: string) => id.trim() !== ""),
-        detail: {
-          ...formData.detail,
-          itinerary: formData.detail.itinerary.filter((i: any) => i.title.trim() !== ""),
-          moreInfo: formData.detail.moreInfo
-            .filter((m: any) => m.title.trim() !== "")
-            .map((m: any) => ({
-              ...m,
-              items: m.items.filter((item: string) => item.trim() !== "")
-            }))
-        }
+      
+      const basicInfo = {
+        name: formData.name,
+        duration: parseInt(formData.duration),
+        price: parseInt(formData.price),
+        discount: parseInt(formData.discount) || 0,
+        stayOption: formData.stayOption,
+        guideService: formData.guideService.filter((s: string) => s && s.trim() !== ""),
+        departureLocationId: formData.departureLocationId,
+        destinationIds: formData.destinationIds.filter((id: string) => id && id.trim() !== ""),
       };
-      await tourService.update(tourId, submissionData);
 
+      const detailData = {
+        description: formData.detail?.description || "",
+        experience: formData.detail?.experience || "",
+        itinerary: (Array.isArray(formData.detail?.itinerary) ? formData.detail.itinerary : [])
+          .filter((i: any) => i && typeof i.title === 'string' && i.title.trim() !== ""),
+        inclusions: (Array.isArray(formData.detail?.inclusions) ? formData.detail.inclusions : [])
+          .filter((s: string) => s && s.trim() !== ""),
+        exclusions: (Array.isArray(formData.detail?.exclusions) ? formData.detail.exclusions : [])
+          .filter((s: string) => s && s.trim() !== ""),
+      };
+
+      await tourService.update(tourId, basicInfo);
+      
+      let detailId = tour?.detail?.id;
+      if (!tour?.detail) {
+        const res = await tourDetailService.create({ ...detailData, tourId });
+        detailId = (res as any).data?.id || (res as any).id;
+      } else {
+        await tourDetailService.update(detailId!, detailData);
+      }
+      
       if (pendingMainImage) {
         await tourService.uploadImage(tourId, pendingMainImage);
       }
 
       const pendingFiles = currentGallery.filter(item => item.file).map(item => item.file as File);
-      if (pendingFiles.length > 0) {
-        await tourDetailService.uploadImages(tourId, pendingFiles);
-      }
-
-      if (pendingVideo) {
-        await tourDetailService.uploadVideo(tourId, pendingVideo);
+      if (pendingFiles.length > 0 && detailId) {
+        await tourDetailService.uploadImages(detailId, pendingFiles);
       }
 
       const remainingPublicIds = currentGallery
         .filter(item => item.publicId)
         .map(item => item.publicId as string);
       
-      const originalPublicIds = (tour.detail?.images?.map((img: any) => img.publicId) as string[]) || [];
+      const originalPublicIds = tour?.detail?.images?.map((img: any) => img.publicId) as string[] || [];
       const publicIdsToDelete = originalPublicIds.filter((id: string) => !remainingPublicIds.includes(id));
       
-      if (publicIdsToDelete.length > 0) {
-        await Promise.all(publicIdsToDelete.map((id: string) => tourDetailService.deleteImage(tourId, id)));
+      if (publicIdsToDelete.length > 0 && detailId) {
+        await Promise.all(publicIdsToDelete.map((pid: string) => tourDetailService.deleteImage(detailId, pid)));
       }
 
       toast.success("Cập nhật tour thành công");
       
       // Clear pending states
       setPendingMainImage(null);
-      setPendingVideo(null);
       
-      mutate(`/tours/${tourId}`);
+      mutateTour();
     } catch (error: any) {
       console.error('Update tour error:', error);
       toast.error(getErrorMessage(error));
@@ -280,14 +272,6 @@ export default function TourDetailPage() {
     }
   };
 
-  const handleVideoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setPendingVideo(file);
-      setVideoPreview(URL.createObjectURL(file));
-    }
-  };
-
   const removeGalleryPreviewItem = (index: number) => {
     setCurrentGallery(prev => prev.filter((_, i) => i !== index));
   };
@@ -297,11 +281,11 @@ export default function TourDetailPage() {
     // Standard ISO strings are usually safer for backends
     const startDate = date ? new Date(date.setHours(8, 0, 0, 0)).toISOString() : new Date().toISOString();
 
-    const defaultSession: Partial<TourSession> = {
+    const defaultSession: CreateTourSessionDto = {
       tourId,
       startDate,
       capacity: 20,
-      adultPrice: formData.price || 0,
+      adultPrice: Number(formData.price) || 0,
       status: DepartureStatus.OPEN
     };
     
@@ -367,11 +351,20 @@ export default function TourDetailPage() {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{tour.name}</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{tour?.name}</h1>
             <p className="text-sm text-gray-500">ID: #{tourId.slice(-8).toUpperCase()}</p>
           </div>
         </div>
         <div className="flex gap-3">
+          <Button 
+            variant="outline" 
+            onClick={handleSeedData} 
+            disabled={isSaving} 
+            className="flex items-center gap-2 px-6 h-11 rounded-xl border-dashed"
+          >
+            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+            Tạo data mẫu
+          </Button>
           <Button onClick={handleSave} disabled={isSaving} className="bg-gray-900 hover:bg-black text-white gap-2 px-6 h-11 rounded-xl">
             {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Lưu thay đổi
@@ -394,7 +387,7 @@ export default function TourDetailPage() {
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all ${activeTab === "media" ? "bg-gray-900 text-white shadow-lg shadow-gray-200" : "text-gray-500 hover:bg-gray-100"}`}
           >
             <ImageIcon className="w-5 h-5" />
-            Hình ảnh & Video
+            Hình ảnh
           </button>
           <button 
             onClick={() => setActiveTab("details")}
@@ -429,13 +422,9 @@ export default function TourDetailPage() {
 
           {activeTab === "media" && (
             <TourMediaSection 
-              handleMainImageChange={handleMainImageChange}
               handleGalleryChange={handleGalleryChange}
-              handleVideoChange={handleVideoChange}
               removeGalleryPreviewItem={removeGalleryPreviewItem}
-              mainImagePreview={mainImagePreview}
               galleryPreviews={currentGallery.map(item => item.url)}
-              videoPreview={videoPreview}
             />
           )}
 
@@ -443,17 +432,11 @@ export default function TourDetailPage() {
             <TourDetailSections 
               formData={formData}
               handleInputChange={handleInputChange}
-              handleArrayChange={handleArrayChange}
-              addArrayItem={addArrayItem}
-              removeArrayItem={removeArrayItem}
               handleItineraryChange={handleItineraryChange}
               addItineraryItem={addItineraryItem}
-              handleMoreInfoChange={handleMoreInfoChange}
-              addMoreInfoItem={addMoreInfoItem}
-              removeMoreInfoItem={removeMoreInfoItem}
-              handleMoreInfoSubItemChange={handleMoreInfoSubItemChange}
-              addMoreInfoSubItem={addMoreInfoSubItem}
-              removeMoreInfoSubItem={removeMoreInfoSubItem}
+              handleDetailArrayChange={handleDetailArrayChange}
+              addDetailArrayItem={addDetailArrayItem}
+              removeDetailArrayItem={removeDetailArrayItem}
             />
           )}
 

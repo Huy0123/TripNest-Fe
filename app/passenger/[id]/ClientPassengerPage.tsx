@@ -273,25 +273,25 @@ export default function ClientPassengerPage() {
               <div className="flex justify-between text-gray-500">
                 <span>Người lớn × {MOCK_ORDER.adults}</span>
                 <span className="font-semibold text-gray-700">
-                  {(MOCK_ORDER.adults * MOCK_ORDER.adultPrice).toLocaleString("vi-VN")} VND
+                  {(MOCK_ORDER.adults * MOCK_ORDER.adultPrice).toLocaleString("vi-VN")} VNĐ
                 </span>
               </div>
               {MOCK_ORDER.children > 0 && (
                 <div className="flex justify-between text-gray-500">
                   <span>Trẻ em × {MOCK_ORDER.children}</span>
                   <span className="font-semibold text-gray-700">
-                    {(MOCK_ORDER.children * MOCK_ORDER.childPrice).toLocaleString("vi-VN")} VND
+                    {(MOCK_ORDER.children * MOCK_ORDER.childPrice).toLocaleString("vi-VN")} VNĐ
                   </span>
                 </div>
               )}
               <div className="flex justify-between text-green-600">
                 <span>Giảm giá 5%</span>
-                <span className="font-semibold">- {(totalPrice - totalAfterDiscount).toLocaleString("vi-VN")} VND</span>
+                <span className="font-semibold">- {(totalPrice - totalAfterDiscount).toLocaleString("vi-VN")} VNĐ</span>
               </div>
             </div>
             <div className="flex justify-between items-center mb-5">
               <span className="font-bold text-[15px] text-gray-800">Tổng cộng</span>
-              <span className="font-bold text-[20px] text-[#ff5e1f]">{totalAfterDiscount.toLocaleString("vi-VN")} VND</span>
+              <span className="font-bold text-[20px] text-[#ff5e1f]">{totalAfterDiscount.toLocaleString("vi-VN")} VNĐ</span>
             </div>
             <button
               onClick={() => router.push(`/payment/${tourId}`)}

@@ -1,5 +1,7 @@
-import { getTourDetailServer } from '@/services/tourService';
+import { getTourByIdServer } from '@/services/tourService';
+import { getTourDetailByTourIdServer } from '@/services/tourDetailService';
 import { getTourSessionsByTourServer } from '@/services/tourSessionService';
+import { getReviewsByTourIdServer } from '@/services/reviewService';
 import { notFound } from 'next/navigation';
 import { Check } from 'lucide-react';
 import TourBreadcrumb from '@/components/tour/TourBreadcrumb';
@@ -8,6 +10,7 @@ import TourHeaderContent from '@/components/tour/TourHeaderContent';
 import TourBookingCard from '@/components/tour/TourBookingCard';
 import TourTicketWidget from '@/components/tour/TourTicketWidget';
 import TourIntro from '@/components/tour/TourIntro';
+import TourReviews from '@/components/tour/TourReviews';
 
 export default async function TourDetailPage({
   params
@@ -20,20 +23,29 @@ export default async function TourDetailPage({
   // Real data fetching in parallel
   let tour: any;
   let sessions: any[] = [];
+  let reviews: any[] = [];
   
   try {
-    const [tourRes, sessionsRes] = await Promise.all([
-      getTourDetailServer(tourId),
+    const [tourRes, detailRes, sessionsRes, reviewsRes] = await Promise.all([
+      getTourByIdServer(tourId).catch(() => null),
+      getTourDetailByTourIdServer(tourId).catch(() => null),
       getTourSessionsByTourServer(tourId).catch(err => {
         console.error('Error fetching sessions:', err);
         return [];
-      })
+      }),
+      getReviewsByTourIdServer(tourId).catch(() => [])
     ]);
 
     tour = (tourRes as any)?.data || tourRes;
-    sessions = (sessionsRes as any)?.data || sessionsRes;
+    const detail = (detailRes as any)?.data || detailRes;
+    if (tour && detail) {
+      tour.detail = detail;
+    }
     
-    console.log('Fetched tour detail:', tourId);
+    sessions = (sessionsRes as any)?.data || sessionsRes;
+    reviews = (reviewsRes as any)?.data || reviewsRes;
+    
+    console.log('Fetched tour reviews count:', reviews.length);
   } catch (error) {
     console.error('Error fetching tour detail data:', error);
     return notFound();
@@ -145,6 +157,23 @@ export default async function TourDetailPage({
               </section>
             </div>
           </div>
+        </div>
+
+        {/* Reviews Section */}
+        <div id="reviews" className="mt-16">
+          <TourReviews 
+            rating={tour.rating || 10} 
+            reviewCount={tour.reviewCount || reviews.length} 
+            reviews={reviews.map((r: any) => ({
+              id: r.id,
+              author: r.authorName || "Khách hàng",
+              avatar: r.authorAvatar,
+              rating: r.rating,
+              date: new Date(r.createdAt).toLocaleDateString('vi-VN'),
+              content: r.content,
+              helpfulCount: r.helpfulCount || 0
+            }))} 
+          />
         </div>
       </div>
     </div>

@@ -78,7 +78,7 @@ export default function ClientPaymentPage() {
             </div>
             <div className="flex justify-between text-[14px]">
               <span className="text-gray-500">Tổng thanh toán</span>
-              <span className="font-bold text-[#ff5e1f]">{total.toLocaleString("vi-VN")} VND</span>
+              <span className="font-bold text-[#ff5e1f]">{total.toLocaleString("vi-VN")} VNĐ</span>
             </div>
           </div>
           <button
@@ -189,11 +189,11 @@ export default function ClientPaymentPage() {
                   </div>
                   <div className="flex justify-between text-gray-600">
                     <span>Người lớn × {MOCK_ORDER.adults}</span>
-                    <span className="font-semibold text-gray-800">{totalAdults.toLocaleString("vi-VN")} VND</span>
+                    <span className="font-semibold text-gray-800">{totalAdults.toLocaleString("vi-VN")} VNĐ</span>
                   </div>
                   <div className="flex justify-between text-gray-600">
                     <span>Trẻ em × {MOCK_ORDER.children}</span>
-                    <span className="font-semibold text-gray-800">{totalChildren.toLocaleString("vi-VN")} VND</span>
+                    <span className="font-semibold text-gray-800">{totalChildren.toLocaleString("vi-VN")} VNĐ</span>
                   </div>
                 </div>
               )}
@@ -201,13 +201,13 @@ export default function ClientPaymentPage() {
               {/* Discount */}
               <div className="flex justify-between text-[14px] mb-2">
                 <span className="text-green-600 font-medium">Giảm giá (5%)</span>
-                <span className="font-semibold text-green-600">- {discount.toLocaleString("vi-VN")} VND</span>
+                <span className="font-semibold text-green-600">- {discount.toLocaleString("vi-VN")} VNĐ</span>
               </div>
 
               {/* Total */}
               <div className="flex justify-between items-center mt-4 pt-4 border-t-2 border-dashed border-gray-200">
                 <span className="text-[17px] font-bold text-gray-900">Tổng cộng</span>
-                <span className="text-[22px] font-bold text-[#ff5e1f]">{total.toLocaleString("vi-VN")} VND</span>
+                <span className="text-[22px] font-bold text-[#ff5e1f]">{total.toLocaleString("vi-VN")} VNĐ</span>
               </div>
             </div>
           </div>

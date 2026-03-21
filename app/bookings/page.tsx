@@ -5,6 +5,7 @@ import ProfileSidebar from "@/components/profile/ProfileSidebar";
 import Image from "next/image";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/format";
 
 const bookings = [
   {
@@ -85,7 +86,7 @@ export default function BookingsPage() {
 
                             <div className="flex items-center gap-6">
                                 <span className="body-01-medium text-grey-900">
-                                    €{booking.price.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                    {formatCurrency(booking.price)}
                                 </span>
                                 
                                 <span className={cn(

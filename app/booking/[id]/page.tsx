@@ -20,12 +20,14 @@ export default async function BookingPage({
 
   if (!tour) return notFound();
 
+  const tourData = tour.data || tour;
+
   return (
     <ClientBookingPage 
-      tourId={tour.id}
-      tourName={tour.name}
-      tourImage={tour.image}
-      basePrice={tour.price}
+      tourId={tourData.id}
+      tourName={tourData.name}
+      tourImage={tourData.image}
+      basePrice={tourData.price}
     />
   );
 }

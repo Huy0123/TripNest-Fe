@@ -1,53 +1,42 @@
 import apiClient from "@/lib/api-client";
-
-export interface UpdateUserDto {
-    firstName?: string;
-    lastName?: string;
-    phoneNumber?: string;
-    address?: string;
-    birthDate?: string;
-}
+import { serverFetch } from "@/lib/server-fetch";
+import { User } from "@/types/user";
 
 export const userService = {
-    getProfile: async () => {
-        const response = await apiClient.get(`/user/me`);
-        return response;
+    getProfile: async (): Promise<User> => {
+        return apiClient.get(`/users/me`);
     },
 
-    updateProfile: async (data: UpdateUserDto) => {
-        const response = await apiClient.patch(`/user/me`, data);
-        return response;
+    updateProfile: async (data: any): Promise<User> => {
+        return apiClient.patch(`/users/me`, data);
     },
 
-    uploadAvatar: async (userId: string, file: File) => {
+    uploadAvatar: async (userId: string, file: File): Promise<User> => {
         const formData = new FormData();
         formData.append('file', file);
-        
-        const response = await apiClient.patch(`/users/${userId}/avatar`, formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data'
-            }
+        return apiClient.patch(`/users/me/avatar`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
         });
-        return response;
     },
 
-    getAllUsers: async (page: number, limit: number) => {
-        const response = await apiClient.get(`/users`, { params: { page, limit } });
-        return response;
+    getAllUsers: async (page: number, limit: number): Promise<{ data: User[]; total: number }> => {
+        return apiClient.get(`/users`, { params: { page, limit } });
     },
 
-    getUserById: async (id: string) => {
-        const response = await apiClient.get(`/users/${id}`);
-        return response;
+    getUserById: async (id: string): Promise<User> => {
+        return apiClient.get(`/users/${id}`);
     },
 
-    deleteUser: async (id: string) => {
-        const response = await apiClient.delete(`/users/${id}`);
-        return response;
+    deleteUser: async (id: string): Promise<void> => {
+        return apiClient.delete(`/users/${id}`);
     },
 
-    updateUser: async (id: string, data: UpdateUserDto) => {
-        const response = await apiClient.patch(`/users/${id}`, data);
-        return response;
-    }
+    updateUser: async (id: string, data: any): Promise<User> => {
+    return apiClient.patch(`/users/${id}`, data);
+  }
 };
+
+export const getUsersServer = (page = 1, limit = 10) => 
+    serverFetch("/users", { query: { page, limit } });
+    
+export const getUserServer = (id: string) => serverFetch(`/users/${id}`);

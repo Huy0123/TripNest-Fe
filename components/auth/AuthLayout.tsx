@@ -21,10 +21,12 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
       try {
         if (credentialResponse.credential) {
           const res: any = await authService.googleLogin(credentialResponse.credential);
-          if (res.success) {
+          const userData = res?.user || res?.data?.user || res?.data || res;
+          
+          if (res.success || userData?.id) {
             toast.success("Đăng nhập bằng One Tap thành công!");
-            mutate("/user/me");
-            router.push('/');
+            await mutate("/users/me", userData, false);
+            window.location.href = '/';
           }
         }
       } catch (error: any) {

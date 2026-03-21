@@ -60,7 +60,12 @@ export default function AdminLayout({ children }: AdminSidebarProps) {
   const { user, isLoading, logout } = useAuth();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const handleLogout = async () => {
     await logout();
     router.push('/signin');
@@ -72,45 +77,15 @@ export default function AdminLayout({ children }: AdminSidebarProps) {
     }
   }, [user, isLoading, router, pathname]);
 
-  if (isLoading) {
+  if (!mounted || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-grey-50">
         <Loader2 className="w-10 h-10 animate-spin text-primary-600" />
       </div>
     );
-  }
+  }  
 
-  if (!user || user.role !== 'ADMIN') {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-grey-50 p-4 text-center">
-        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-          <X className="w-8 h-8 text-red-600" />
-        </div>
-        <h1 className="header-04-bold text-grey-900 mb-2">Truy cập bị từ chối</h1>
-        <p className="body-01-regular text-grey-600 mb-6 max-w-md">
-          Bạn không có quyền quản trị để truy cập trang này. 
-          <br />
-          <span className="text-red-500 font-medium">Quyền hiện tại: {user?.role || 'Khách'}</span>
-        </p>
-        <div className="flex gap-4">
-          <button 
-            onClick={() => router.push('/')}
-            className="px-6 py-2 border border-grey-300 rounded-lg hover:bg-grey-50 transition-colors body-02-medium"
-          >
-            Về trang chủ
-          </button>
-          <button 
-            onClick={handleLogout}
-            className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors body-02-medium shadow-sm"
-          >
-            Đăng xuất & Đăng nhập lại
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  
+  if (!user || user.role !== 'ADMIN') return null;
 
   return (
     <div className="min-h-screen bg-grey-50">

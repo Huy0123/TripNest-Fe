@@ -2,7 +2,7 @@ import React, { Suspense } from "react";
 import SearchHeader from "@/components/tour/SearchTour";
 import FilterSidebar from "@/components/tour/FilterSidebar";
 import TourList from "@/components/tour/TourList";
-import { ToursQuery } from "@/services/tourService";
+import type { ToursQueryDto } from "@/types/tours";
 import { getLocationsServer } from "@/services/locationService";
 import { getToursServer } from "@/services/tourService";
 import Image from "next/image";
@@ -16,16 +16,19 @@ export default async function ToursPage({
 }) {
   const resolvedSearchParams = await searchParams;
 
-  const filters: ToursQuery = {
-    location: typeof resolvedSearchParams.location === 'string' ? resolvedSearchParams.location : 
+  const filters: ToursQueryDto = {
+    destinationId: typeof resolvedSearchParams.location === 'string' ? resolvedSearchParams.location : 
               (typeof resolvedSearchParams.destinationId === 'string' ? resolvedSearchParams.destinationId : undefined),
     minPrice: resolvedSearchParams.minPrice ? Number(resolvedSearchParams.minPrice) : undefined,
     maxPrice: resolvedSearchParams.maxPrice ? Number(resolvedSearchParams.maxPrice) : undefined,
     search: typeof resolvedSearchParams.search === 'string' ? resolvedSearchParams.search : undefined,
-    sortBy: (resolvedSearchParams.sortBy as string) || 'createdAt',
+    rating: resolvedSearchParams.rating ? Number(resolvedSearchParams.rating) : undefined,
+    duration: resolvedSearchParams.duration ? Number(resolvedSearchParams.duration) : undefined,
+    stayOption: resolvedSearchParams.stayOption as any,
+    sortBy: (resolvedSearchParams.sortBy as any) || 'createdAt',
     sortOrder: (resolvedSearchParams.sortOrder as 'ASC' | 'DESC') || 'DESC',
     page: resolvedSearchParams.page ? Number(resolvedSearchParams.page) : 1,
-    limit: 10,
+    limit: 12,
   };
 
   // Fetch tours with filters

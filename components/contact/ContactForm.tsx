@@ -135,11 +135,9 @@ export default function ContactForm() {
           type="submit"
           size="lg"
           className="w-full"
-          isLoading={isSubmitting}
-          loadingText="Sending..."
           disabled={isSubmitting}
         >
-          Send Message
+          {isSubmitting ? "Sending..." : "Send Message"}
         </Button>
       </form>
     </div>

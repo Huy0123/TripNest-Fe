@@ -1,15 +1,18 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Calendar, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { TourSessionStats } from './TourSessionStats';
+import { useSocket } from '@/hooks/useSocket';
+import { TourSession } from '@/types/tour-session';
 import { TourSessionCalendar } from './TourSessionCalendar';
 import { TourSessionBulkModal } from './TourSessionBulkModal';
 import { TourSessionCreateModal } from './TourSessionCreateModal';
 
 interface TourSessionsSectionProps {
   tourId: string;
-  sessions: any[];
+  sessions: TourSession[];
   addSessionItem: (date?: Date) => void;
   updateSessionItem: (index: number, field: string, value: any) => void;
   removeSessionItem: (index: number) => void;
@@ -24,6 +27,31 @@ export function TourSessionsSection({
   tourPrice
 }: TourSessionsSectionProps) {
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [localSessions, setLocalSessions] = useState<TourSession[]>([]);
+
+  useEffect(() => {
+    setLocalSessions(Array.isArray(sessions) ? sessions : []);
+  }, [sessions]);
+
+  // WebSocket for real-time updates
+  const { on } = useSocket();
+
+  useEffect(() => {
+    const cleanup = on('sessionUpdated', (updatedData: { 
+      sessionId: string, 
+      bookedCount: number, 
+      capacity: number, 
+      status: string 
+    }) => {
+      setLocalSessions(prev => prev.map(s => 
+        s.id === updatedData.sessionId 
+          ? { ...s, bookedCount: updatedData.bookedCount, capacity: updatedData.capacity, status: updatedData.status as any }
+          : s
+      ));
+    });
+
+    return cleanup;
+  }, [on]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [sessionToEdit, setSessionToEdit] = useState<any>(null);
@@ -46,6 +74,33 @@ export function TourSessionsSection({
     setSelectedDate(null);
   };
 
+  const stats = useMemo(() => {
+    if (!localSessions.length) return null;
+    
+    const sorted = [...localSessions].sort((a, b) => 
+      new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+    );
+
+    const totalRevenue = sorted.reduce((acc, s) => acc + (s.bookedCount * s.adultPrice), 0);
+    const totalBooked = sorted.reduce((acc, s) => acc + s.bookedCount, 0);
+    const totalCapacity = sorted.reduce((acc, s) => acc + s.capacity, 0);
+    const upcomingSessions = sorted.filter(s => {
+      const sessionDate = new Date(s.startDate);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return sessionDate >= today;
+    });
+    const firstUpcomingSession = upcomingSessions.length > 0 ? upcomingSessions[0] : null;
+
+    return {
+      totalRevenue,
+      totalBooked,
+      totalCapacity,
+      upcomingSessionsCount: upcomingSessions.length,
+      firstUpcomingSession
+    };
+  }, [localSessions]);
+
   return (
     <div className="space-y-6 pt-4 border-t">
       <div className="flex items-center justify-between">
@@ -65,9 +120,19 @@ export function TourSessionsSection({
         </Button>
       </div>
       
+      {stats && (
+        <TourSessionStats 
+          tourId={tourId}
+          totalBooked={stats.totalBooked}
+          totalCapacity={stats.totalCapacity}
+          upcomingSessionsCount={stats.upcomingSessionsCount}
+          firstUpcomingSession={stats.firstUpcomingSession}
+        />
+      )}
+
       <div className="p-6 border-2 border-gray-50 rounded-3xl bg-white shadow-sm">
         <TourSessionCalendar 
-          sessions={sessions}
+          sessions={localSessions}
           onDateClick={handleDateClick}
           onSessionClick={handleSessionClick}
         />

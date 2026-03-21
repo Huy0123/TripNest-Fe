@@ -1,72 +1,76 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, Filter, UserPlus, Mail, Phone, MoreVertical } from 'lucide-react';
+import useSWR from 'swr';
+import { Search, Filter, UserPlus, Mail, Phone, MoreVertical, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { formatCurrency } from '@/lib/format';
+import { userService } from '@/services/userService';
+import { User, UserRole } from '@/types/user';
 
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-  joinDate: string;
-  totalBookings: number;
-  totalSpent: number;
-  status: 'Active' | 'Inactive' | 'Suspended';
-  role: 'Customer' | 'Admin';
+interface UserResponse {
+  data: User[];
+  total: number;
 }
-
-const users: User[] = [
-  { id: 1, name: 'John Doe', email: 'john@example.com', phone: '+1 234 567 8900', joinDate: '2025-06-15', totalBookings: 5, totalSpent: 12495, status: 'Active', role: 'Customer' },
-  { id: 2, name: 'Jane Smith', email: 'jane@example.com', phone: '+1 234 567 8901', joinDate: '2025-08-20', totalBookings: 3, totalSpent: 8997, status: 'Active', role: 'Customer' },
-  { id: 3, name: 'Bob Johnson', email: 'bob@example.com', phone: '+1 234 567 8902', joinDate: '2025-09-10', totalBookings: 2, totalSpent: 5698, status: 'Active', role: 'Customer' },
-  { id: 4, name: 'Alice Brown', email: 'alice@example.com', phone: '+1 234 567 8903', joinDate: '2025-07-05', totalBookings: 4, totalSpent: 10196, status: 'Active', role: 'Customer' },
-  { id: 5, name: 'Charlie Wilson', email: 'charlie@example.com', phone: '+1 234 567 8904', joinDate: '2025-10-12', totalBookings: 1, totalSpent: 2499, status: 'Inactive', role: 'Customer' },
-  { id: 6, name: 'Diana Martinez', email: 'diana@example.com', phone: '+1 234 567 8905', joinDate: '2025-11-01', totalBookings: 6, totalSpent: 15894, status: 'Active', role: 'Customer' },
-  { id: 7, name: 'Admin User', email: 'admin@tripnest.com', phone: '+1 234 567 8906', joinDate: '2025-01-01', totalBookings: 0, totalSpent: 0, status: 'Active', role: 'Admin' },
-];
 
 export default function UsersManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [page, setPage] = useState(1);
+  const limit = 10;
+  const [mounted, setMounted] = useState(false);
 
-  const filteredUsers = users.filter((user) => {
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const { data, isLoading, error } = useSWR(
+    mounted ? [`/users`, page, limit] : null,
+    async () => {
+      const res = await userService.getAllUsers(page, limit);
+      return (res as any).data || res;
+    }
+  );
+
+  const users = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+  const total = data?.total || users.length;
+
+  const filteredUsers = users.filter((user: User) => {
+    const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
     const matchesSearch = 
-      user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      fullName.includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || user.status.toLowerCase() === statusFilter;
-    return matchesSearch && matchesStatus;
+    
+    if (statusFilter === 'all') return matchesSearch;
+    if (statusFilter === 'active') return matchesSearch && user.isActive;
+    if (statusFilter === 'inactive') return matchesSearch && !user.isActive;
+    return matchesSearch;
   });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Active':
-        return 'bg-green-100 text-green-700';
-      case 'Inactive':
-        return 'bg-grey-200 text-grey-700';
-      case 'Suspended':
-        return 'bg-red-100 text-red-700';
-      default:
-        return 'bg-grey-100 text-grey-700';
-    }
+  const getStatusColor = (isActive: boolean) => {
+    return isActive ? 'bg-green-100 text-green-700' : 'bg-grey-200 text-grey-700';
   };
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'Active': return 'Đang hoạt động';
-      case 'Inactive': return 'Ngưng hoạt động';
-      case 'Suspended': return 'Bị khóa';
-      default: return status;
-    }
+  const getStatusLabel = (isActive: boolean) => {
+    return isActive ? 'Đang hoạt động' : 'Ngưng hoạt động';
   };
 
-  const getRoleLabel = (role: string) => {
-    return role === 'Admin' ? 'Quản trị viên' : 'Khách hàng';
+  const getRoleLabel = (role: UserRole) => {
+    return role === UserRole.ADMIN ? 'Quản trị viên' : 'Khách hàng';
   };
 
-  const getRoleColor = (role: string) => {
-    return role === 'Admin' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700';
+  const getRoleColor = (role: UserRole) => {
+    return role === UserRole.ADMIN ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700';
   };
+
+  if (!mounted) return null;
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-grey-400" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -82,32 +86,6 @@ export default function UsersManagement() {
           <UserPlus className="icon-sm" />
           Thêm người dùng mới
         </Button>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg p-4 border border-grey-200">
-          <p className="caption-medium text-grey-600 mb-1">Tổng người dùng</p>
-          <p className="header-05-bold text-grey-900">{users.length}</p>
-        </div>
-        <div className="bg-white rounded-lg p-4 border border-grey-200">
-          <p className="caption-medium text-grey-600 mb-1">Đang hoạt động</p>
-          <p className="header-05-bold text-green-600">
-            {users.filter(u => u.status === 'Active').length}
-          </p>
-        </div>
-        <div className="bg-white rounded-lg p-4 border border-grey-200">
-          <p className="caption-medium text-grey-600 mb-1">Mới trong tháng</p>
-          <p className="header-05-bold text-blue-600">
-            {users.filter(u => new Date(u.joinDate).getMonth() === new Date().getMonth()).length}
-          </p>
-        </div>
-        <div className="bg-white rounded-lg p-4 border border-grey-200">
-          <p className="caption-medium text-grey-600 mb-1">Tổng chi tiêu</p>
-          <p className="header-05-bold text-grey-900">
-            €{users.reduce((sum, u) => sum + u.totalSpent, 0).toLocaleString()}
-          </p>
-        </div>
       </div>
 
       {/* Filters */}
@@ -156,16 +134,20 @@ export default function UsersManagement() {
               </tr>
             </thead>
             <tbody>
-              {filteredUsers.map((user) => (
+              {filteredUsers.map((user: User) => (
                 <tr key={user.id} className="border-b border-grey-100 hover:bg-grey-50 transition-colors">
                   <td className="py-4 px-6">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
-                        <span className="body-02-bold text-primary-700">
-                          {user.name.charAt(0)}
-                        </span>
+                      <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden">
+                        {user.avatar ? (
+                          <img src={user.avatar} alt={user.firstName} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="body-02-bold text-primary-700">
+                            {user.firstName.charAt(0)}
+                          </span>
+                        )}
                       </div>
-                      <p className="body-02-medium text-grey-900">{user.name}</p>
+                      <p className="body-02-medium text-grey-900">{user.firstName} {user.lastName}</p>
                     </div>
                   </td>
                   <td className="py-4 px-6">
@@ -174,20 +156,22 @@ export default function UsersManagement() {
                         <Mail className="icon-xs text-grey-400" />
                         <p className="caption-regular text-grey-700">{user.email}</p>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Phone className="icon-xs text-grey-400" />
-                        <p className="caption-regular text-grey-700">{user.phone}</p>
-                      </div>
+                      {user.phone && (
+                        <div className="flex items-center gap-2">
+                          <Phone className="icon-xs text-grey-400" />
+                          <p className="caption-regular text-grey-700">{user.phone}</p>
+                        </div>
+                      )}
                     </div>
                   </td>
                   <td className="py-4 px-6">
-                    <p className="body-02-regular text-grey-700">{user.joinDate}</p>
+                    <p className="body-02-regular text-grey-700">{new Date(user.createdAt).toLocaleDateString('vi-VN')}</p>
                   </td>
                   <td className="py-4 px-6">
-                    <p className="body-02-regular text-grey-700">{user.totalBookings}</p>
+                    <p className="body-02-regular text-grey-700">0</p>
                   </td>
                   <td className="py-4 px-6">
-                    <p className="body-02-bold text-grey-900">€{user.totalSpent.toLocaleString()}</p>
+                    <p className="body-02-bold text-grey-900">{formatCurrency(0)}</p>
                   </td>
                   <td className="py-4 px-6">
                     <span className={`inline-flex px-3 py-1 rounded-full caption-bold ${getRoleColor(user.role)}`}>
@@ -195,8 +179,8 @@ export default function UsersManagement() {
                     </span>
                   </td>
                   <td className="py-4 px-6">
-                    <span className={`inline-flex px-3 py-1 rounded-full caption-bold ${getStatusColor(user.status)}`}>
-                      {getStatusLabel(user.status)}
+                    <span className={`inline-flex px-3 py-1 rounded-full caption-bold ${getStatusColor(user.isActive)}`}>
+                      {getStatusLabel(user.isActive)}
                     </span>
                   </td>
                   <td className="py-4 px-6">
@@ -212,11 +196,25 @@ export default function UsersManagement() {
 
         <div className="flex items-center justify-between px-6 py-4 border-t border-grey-200 bg-grey-50">
           <p className="body-02-regular text-grey-600">
-            Hiển thị {filteredUsers.length} trên tổng số {users.length} người dùng
+            Hiển thị {filteredUsers.length} trên tổng số {total} người dùng
           </p>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm">Trước</Button>
-            <Button variant="outline" size="sm">Sau</Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={page === 1}
+            >
+              Trước
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setPage(p => p + 1)}
+              disabled={page * limit >= total}
+            >
+              Sau
+            </Button>
           </div>
         </div>
       </div>

@@ -16,6 +16,7 @@ import { tourSessionService, TourSession } from '@/services/tourSessionService';
 import { tourService } from '@/services/tourService';
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
+import { formatCurrency } from '@/lib/format';
 
 export default function TourSessionsManagement() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -42,34 +43,40 @@ export default function TourSessionsManagement() {
   const [isEdit, setIsEdit] = useState(false);
 
   // Form state
-  const [formData, setFormData] = useState<Partial<TourSession>>({
+  const [formData, setFormData] = useState<any>({
     tourId: '',
-    startTime: '',
-    endTime: '',
-    availableSeats: 0,
-    status: 'UPCOMING'
+    startDate: '',
+    capacity: 0,
+    adultPrice: 0,
+    childrenPrice: 0,
+    discount: 0,
+    status: 'OPEN' as any
   });
 
   const handleOpenCreate = () => {
     setFormData({
       tourId: tours[0]?.id || '',
-      startTime: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
-      endTime: format(new Date(Date.now() + 86400000), "yyyy-MM-dd'T'HH:mm"),
-      availableSeats: 20,
-      status: 'UPCOMING'
+      startDate: format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+      capacity: 20,
+      adultPrice: 0,
+      childrenPrice: 0,
+      discount: 0,
+      status: 'OPEN' as any
     });
     setIsEdit(false);
     setIsFormOpen(true);
   };
 
-  const handleOpenEdit = (session: TourSession) => {
+  const handleOpenEdit = (session: any) => {
     setSelectedSession(session);
     setFormData({
-      tourId: session.tourId,
-      startTime: format(new Date(session.startTime), "yyyy-MM-dd'T'HH:mm"),
-      endTime: format(new Date(session.endTime), "yyyy-MM-dd'T'HH:mm"),
-      availableSeats: session.availableSeats,
-      status: session.status
+      tourId: session.tourId || session.tour?.id,
+      startDate: format(new Date(session.startDate || session.startTime || new Date()), "yyyy-MM-dd'T'HH:mm"),
+      capacity: session.capacity || session.availableSeats || 0,
+      adultPrice: session.adultPrice || parseInt(session.tour?.price || '0', 10),
+      childrenPrice: session.childrenPrice || 0,
+      discount: session.discount || 0,
+      status: session.status || 'OPEN'
     });
     setIsEdit(true);
     setIsFormOpen(true);
@@ -84,7 +91,7 @@ export default function TourSessionsManagement() {
         console.log('Update response:', res);
         toast.success('Cập nhật phiên thành công');
       } else {
-        const res = await tourSessionService.create(formData);
+        const res = await tourSessionService.create(formData as any);
         console.log('Create response:', res);
         toast.success('Tạo phiên thành công');
       }
@@ -133,9 +140,9 @@ export default function TourSessionsManagement() {
             <thead className="bg-grey-50 border-b border-grey-200">
               <tr>
                 <th className="text-left py-4 px-6 body-02-bold text-grey-900">Tour</th>
-                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Bắt đầu</th>
-                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Kết thúc</th>
-                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Chỗ trống</th>
+                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Ngày đi</th>
+                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Sức chứa</th>
+                <th className="text-left py-4 px-6 body-02-bold text-grey-900">Giá TT</th>
                 <th className="text-left py-4 px-6 body-02-bold text-grey-900">Trạng thái</th>
                 <th className="text-left py-4 px-6 body-02-bold text-grey-900">Thao tác</th>
               </tr>
@@ -148,14 +155,14 @@ export default function TourSessionsManagement() {
               ) : (
                 sessions.map((session: any) => (
                   <tr key={session.id} className="border-b border-grey-100 hover:bg-grey-50">
-                    <td className="py-4 px-6 font-medium">{getTourName(session.tourId)}</td>
-                    <td className="py-4 px-6">{format(new Date(session.startTime), 'dd/MM/yyyy HH:mm')}</td>
-                    <td className="py-4 px-6">{format(new Date(session.endTime), 'dd/MM/yyyy HH:mm')}</td>
-                    <td className="py-4 px-6">{session.availableSeats}</td>
+                    <td className="py-4 px-6 font-medium">{session.tour?.name || getTourName(session.tourId)}</td>
+                    <td className="py-4 px-6">{format(new Date(session.startDate || session.startTime || new Date()), 'dd/MM/yyyy HH:mm')}</td>
+                    <td className="py-4 px-6">{session.capacity || session.availableSeats || 0}</td>
+                    <td className="py-4 px-6">{formatCurrency(session.adultPrice)}</td>
                     <td className="py-4 px-6">
                       <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                        session.status === 'UPCOMING' ? 'bg-blue-100 text-blue-700' : 
-                        session.status === 'ONGOING' ? 'bg-green-100 text-green-700' : 'bg-grey-100 text-grey-700'
+                        session.status === 'OPEN' ? 'bg-blue-100 text-blue-700' : 
+                        session.status === 'SOLDOUT' ? 'bg-red-100 text-red-700' : 'bg-grey-100 text-grey-700'
                       }`}>
                         {session.status}
                       </span>
@@ -191,11 +198,13 @@ export default function TourSessionsManagement() {
               </select>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <Input label="Thời gian bắt đầu" type="datetime-local" value={formData.startTime} onChange={(e) => setFormData({...formData, startTime: e.target.value})} required />
-              <Input label="Thời gian kết thúc" type="datetime-local" value={formData.endTime} onChange={(e) => setFormData({...formData, endTime: e.target.value})} required />
+              <Input label="Ngày khởi hành" type="datetime-local" value={formData.startDate} onChange={(e) => setFormData({...formData, startDate: e.target.value})} required />
+              <Input label="Số chỗ/Sức chứa" type="number" value={formData.capacity} onChange={(e) => setFormData({...formData, capacity: Number(e.target.value)})} required />
+              <Input label="Giá Người Lớn" type="number" value={formData.adultPrice} onChange={(e) => setFormData({...formData, adultPrice: Number(e.target.value)})} required />
+              <Input label="Giá Trẻ Em" type="number" value={formData.childrenPrice} onChange={(e) => setFormData({...formData, childrenPrice: Number(e.target.value)})} />
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <Input label="Số chỗ trống" type="number" value={formData.availableSeats} onChange={(e) => setFormData({...formData, availableSeats: Number(e.target.value)})} required />
+              <Input label="Giảm giá (%)" type="number" value={formData.discount} onChange={(e) => setFormData({...formData, discount: Number(e.target.value)})} />
               <div className="space-y-1">
                 <label className="text-sm font-medium">Trạng thái</label>
                 <select 
@@ -203,9 +212,9 @@ export default function TourSessionsManagement() {
                   value={formData.status}
                   onChange={(e) => setFormData({...formData, status: e.target.value as any})}
                 >
-                  <option value="UPCOMING">UPCOMING</option>
-                  <option value="ONGOING">ONGOING</option>
-                  <option value="COMPLETED">COMPLETED</option>
+                  <option value="OPEN">OPEN</option>
+                  <option value="SOLDOUT">SOLDOUT</option>
+                  <option value="CLOSED">CLOSED</option>
                   <option value="CANCELLED">CANCELLED</option>
                 </select>
               </div>

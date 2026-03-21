@@ -1,33 +1,8 @@
 import apiClient from "@/lib/api-client";
 import { serverFetch } from "@/lib/server-fetch";
+import { CreateBookingDto } from "@/types/booking";
 
-export enum BookingStatus {
-  PENDING = 'PENDING',
-  CONFIRMED = 'CONFIRMED',
-  PAID = 'PAID',
-  CANCELLED = 'CANCELLED',
-  REFUNDED = 'REFUNDED',
-}
-
-export interface Booking {
-  id: string;
-  userId: string;
-  tourId: string;
-  sessionId: string;
-  promotionId?: string;
-  numberOfPeople: number;
-  totalPrice: number;
-  status: BookingStatus;
-  customerName: string;
-  customerEmail: string;
-  customerPhone: string;
-  notes?: string;
-  createdAt: string;
-  updatedAt: string;
-  tour?: any;
-  session?: any;
-  user?: any;
-}
+export type { Booking, BookingStatus } from "@/types/booking";
 
 export const bookingService = {
   findAll: async (query?: { status?: string; userId?: string }) => {
@@ -38,16 +13,12 @@ export const bookingService = {
     return apiClient.get(`/bookings/${id}`);
   },
 
-  create: async (data: Partial<Booking>) => {
+  create: async (data: CreateBookingDto) => {
     return apiClient.post(`/bookings`, data);
   },
 
-  update: async (id: string, data: Partial<Booking>) => {
-    return apiClient.patch(`/bookings/${id}`, data);
-  },
-
-  remove: async (id: string) => {
-    return apiClient.delete(`/bookings/${id}`);
+  cancel: async (id: string) => {
+    return apiClient.patch(`/bookings/${id}/cancel`);
   },
 };
 

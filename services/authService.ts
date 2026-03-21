@@ -52,7 +52,7 @@ export const authService = {
     },
 
     resendOtp: async (data: {email: string}) => {
-        const response = await apiClient.post(`/auth/resend-verification-email`, data)
+        const response = await apiClient.post(`/auth/resend-verification`, data)
         return response;
     },
 
@@ -73,4 +73,4 @@ export const authService = {
 };
 
 // Server-side Fetch Functions
-export const getMeServer = () => serverFetch("/user/me");
+export const getMeServer = () => serverFetch("/users/me");

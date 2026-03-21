@@ -8,6 +8,7 @@ import { paymentService } from "@/services/paymentService";
 import { Loader2, CheckCircle2, CreditCard, ShieldCheck, ArrowLeft } from "lucide-react";
 import BookingSteps from "@/components/tour/BookingSteps";
 import { toast } from "react-toastify";
+import { formatCurrency } from "@/lib/format";
 
 export default function PaymentConfirmPage() {
   const params = useParams();
@@ -20,20 +21,21 @@ export default function PaymentConfirmPage() {
   );
 
   const booking = bookingResponse?.data || bookingResponse;
-
+  
   const handlePayment = async () => {
+    const amount = Number(booking?.totalAmount || 0);
     try {
-      console.log('Initiating VNPay for booking:', bookingId);
-      const res = await paymentService.createVNPayUrl({
+      console.log('Initiating payment for booking:', bookingId, 'Amount:', amount);
+      const res = await paymentService.createPaymentUrl({
         bookingId: bookingId,
-        amount: booking.totalPrice,
+        amount: amount,
       });
       
-      const vnpUrl = res.data?.url || res.url || res.data;
-      if (vnpUrl) {
+      const vnpUrl = res.url || (res as any)?.data?.url || res;
+      if (vnpUrl && typeof vnpUrl === 'string') {
         window.location.href = vnpUrl;
       } else {
-        throw new Error("Could not get VNPay URL");
+        throw new Error("Could not get payment URL");
       }
     } catch (error: any) {
       console.error('Payment error:', error);
@@ -49,6 +51,9 @@ export default function PaymentConfirmPage() {
     return <div className="min-h-screen flex items-center justify-center">Không tìm thấy đơn đặt tour.</div>;
   }
 
+  const tourName = booking.session?.tour?.name || booking.tour?.name || "Chi tiết tour";
+  const displayAmount = Number(booking.totalAmount || 0);
+
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Header */}
@@ -58,7 +63,7 @@ export default function PaymentConfirmPage() {
             <ArrowLeft className="w-5 h-5 text-gray-700" />
           </button>
           <div className="flex-1 flex justify-center">
-            <BookingSteps current={1} />
+            <BookingSteps current={2} />
           </div>
         </div>
       </div>
@@ -80,16 +85,16 @@ export default function PaymentConfirmPage() {
                 <div className="space-y-4">
                   <div>
                     <p className="text-sm text-gray-400 mb-1">Tour</p>
-                    <p className="font-bold text-gray-900">{booking.tour?.name || "Chi tiết tour"}</p>
+                    <p className="font-bold text-gray-900">{tourName}</p>
                   </div>
                   <div className="flex gap-8">
                     <div>
                       <p className="text-sm text-gray-400 mb-1">Mã đơn hàng</p>
-                      <p className="font-bold text-gray-900">#{(booking.id || "").slice(-8).toUpperCase()}</p>
+                      <p className="font-bold text-gray-900">#{booking.bookingCode || (booking.id || "").slice(-8).toUpperCase()}</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-400 mb-1">Số khách</p>
-                      <p className="font-bold text-gray-900">{booking.numberOfPeople} người</p>
+                      <p className="font-bold text-gray-900">{(booking.adults || 0) + (booking.children || 0)} người</p>
                     </div>
                   </div>
                 </div>
@@ -100,11 +105,11 @@ export default function PaymentConfirmPage() {
                 <div className="bg-gray-50 p-6 rounded-2xl space-y-3">
                   <div className="flex justify-between text-gray-600">
                     <span>Tổng tiền tour</span>
-                    <span>{booking.totalPrice.toLocaleString()} VND</span>
+                    <span>{formatCurrency(displayAmount)}</span>
                   </div>
                   <div className="border-t border-gray-200 pt-3 flex justify-between items-center">
                     <span className="font-bold text-gray-900">Cần thanh toán</span>
-                    <span className="text-2xl font-bold text-[#ff5e1f]">{booking.totalPrice.toLocaleString()} VND</span>
+                    <span className="text-2xl font-bold text-[#ff5e1f]">{formatCurrency(displayAmount)}</span>
                   </div>
                 </div>
               </div>

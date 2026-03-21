@@ -65,7 +65,7 @@ export default function SignInPage() {
         const rawData = (response as any);
         const userData = rawData?.user || rawData?.data?.user || rawData?.data || rawData;
 
-        await mutate('/user/me', { success: true, data: userData }, false);
+        await mutate('/users/me', { success: true, data: userData }, false);
         
         if (userData.role === 'ADMIN') {
           window.location.href = '/admin';

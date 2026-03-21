@@ -36,7 +36,7 @@ export function ConfirmDialog({
     },
     warning: {
       icon: <AlertTriangle className="icon-lg text-orange-500" />,
-      confirmVariant: 'warning' as const,
+      confirmVariant: 'default' as const,
     },
     info: {
       icon: <Info className="icon-lg text-blue-500" />,
@@ -95,7 +95,6 @@ export function ConfirmDialog({
             <Button
               variant={config.confirmVariant}
               onClick={onConfirm}
-              isLoading={isLoading}
               disabled={isLoading}
             >
               {confirmText}

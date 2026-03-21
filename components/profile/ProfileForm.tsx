@@ -80,7 +80,7 @@ export default function ProfileForm() {
         await userService.uploadAvatar(user.id, avatarFile);
       }
       
-      await mutate("/user/me");
+      await mutate("/users/me");
       
       toast.success("Cập nhật thông tin cá nhân thành công");
     } catch (error: any) {

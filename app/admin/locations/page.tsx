@@ -12,14 +12,20 @@ import {
   DialogTitle,
   DialogFooter
 } from "@/components/ui/dialog"
-import { locationService, Location } from '@/services/locationService';
+import { locationService } from '@/services/locationService';
+import type { Location } from '@/types/location';
 import { toast } from 'react-toastify';
 
 export default function LocationsManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(5); // Show 5 items per page for easier testing of pagination
+  const [pageSize, setPageSize] = useState(5);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Debounce search
   useEffect(() => {
@@ -32,15 +38,15 @@ export default function LocationsManagement() {
 
   // Data fetching
   const { data: locationsResponse, isLoading } = useSWR(
-    ['/locations', debouncedSearch, currentPage, pageSize],
-    () => locationService.findAll(debouncedSearch, currentPage, pageSize)
+    mounted ? ['/locations', debouncedSearch, currentPage, pageSize] : null,
+    () => locationService.findAll() // Backend might not support search/page yet or it's handled differently
   ) as any;
   
-  const locations = Array.isArray(locationsResponse?.data?.data) 
-    ? locationsResponse.data.data 
-    : (Array.isArray(locationsResponse?.data) ? locationsResponse.data : []);
+  const locations = Array.isArray(locationsResponse?.data) 
+    ? locationsResponse.data 
+    : (Array.isArray(locationsResponse) ? locationsResponse : []);
 
-  const totalLocations = locationsResponse?.total || locations.length;
+  const totalLocations = locationsResponse?.total || (Array.isArray(locationsResponse) ? locationsResponse.length : 0);
   const totalPages = Math.ceil(totalLocations / pageSize);
 
   // State for modals
@@ -86,7 +92,12 @@ export default function LocationsManagement() {
         await locationService.update(selectedLocation.id, formData);
         toast.success('Cập nhật địa điểm thành công');
       } else {
-        await locationService.create(formData);
+        const { city, country } = formData;
+        if (!city || !country) {
+           toast.error('Vui lòng nhập thành phố và quốc gia');
+           return;
+        }
+        await locationService.create({ city, country });
         toast.success('Thêm địa điểm thành công');
       }
       mutate(['/locations', debouncedSearch, currentPage, pageSize]);
@@ -107,6 +118,8 @@ export default function LocationsManagement() {
       }
     }
   };
+
+  if (!mounted) return null;
 
   return (
     <div className="space-y-6">

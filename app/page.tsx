@@ -10,10 +10,10 @@ import { getLocationsServer } from '@/services/locationService';
 // Dynamic wrappers with API calls inside
 import HomeSliderWrapper from "@/components/home/wrappers/HomeSliderWrapper";
 import PopularDestinationsWrapper from "@/components/home/wrappers/PopularDestinationsWrapper";
-import DomesticToursWrapper from "@/components/home/wrappers/DomesticToursWrapper";
+import BeachToursWrapper from "@/components/home/wrappers/BeachToursWrapper";
+import MountainToursWrapper from "@/components/home/wrappers/MountainToursWrapper";
 import PromotionalBannerWrapper from "@/components/home/wrappers/PromotionalBannerWrapper";
 import SuperDealsWrapper from "@/components/home/wrappers/SuperDealsWrapper";
-import InternationalToursWrapper from "@/components/home/wrappers/InternationalToursWrapper";
 import BlogSectionWrapper from "@/components/home/wrappers/BlogSectionWrapper";
 
 // Skeleton UI for sections
@@ -45,11 +45,11 @@ export default async function Home() {
       </Suspense>
 
       <Suspense fallback={<SectionSkeleton />}>
-        <DomesticToursWrapper />
+        <BeachToursWrapper />
       </Suspense>
 
       <Suspense fallback={<SectionSkeleton />}>
-        <InternationalToursWrapper />
+        <MountainToursWrapper />
       </Suspense>
 
       <Suspense fallback={<SectionSkeleton />}>
